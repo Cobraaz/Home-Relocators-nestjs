@@ -3,14 +3,15 @@
 # ------------------------------------------------------
 
 input CreateUserInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  avatar: String
+  email: String!
+  name: String!
+  password: String!
+  passwordConfirm: String!
 }
 
 type Mutation {
   createUser(createUserInput: CreateUserInput!): User!
-  removeUser(id: Int!): User!
-  updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
 type Query {
@@ -18,13 +19,20 @@ type Query {
   users: [User!]!
 }
 
-input UpdateUserInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+"""The Different Types of users."""
+enum Role {
+  ADMIN
+  CUSTOMER
+  SELLER
 }
 
 type User {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  avatar: String!
+  createdAt: String!
+  email: String!
+  id: Int!
+  name: String!
+  role: Role!
+  uniqueID: String!
+  updatedAt: String!
 }

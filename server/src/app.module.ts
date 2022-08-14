@@ -4,6 +4,8 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
+import { GraphQLError } from 'graphql';
+import { ValidationError } from 'class-validator';
 
 @Module({
   imports: [
@@ -12,6 +14,14 @@ import { UsersModule } from './users/users.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      formatError: (err: GraphQLError) => {
+        // if (err.originalError instanceof ArgumentValidationError) {
+        // const errorMessage = err.extensions?.exception.validationErrors;
+
+        // CustomError(errorMessage);
+        // }
+        return err;
+      },
     }),
     UsersModule,
   ],
