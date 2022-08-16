@@ -2,9 +2,9 @@ import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
 import { Expose, Transform } from 'class-transformer';
 
 enum Role {
-  CUSTOMER,
-  SELLER,
-  ADMIN,
+  CUSTOMER = 'CUSTOMER',
+  SELLER = 'SELLER',
+  ADMIN = 'ADMIN',
 }
 
 registerEnumType(Role, {

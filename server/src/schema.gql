@@ -10,8 +10,14 @@ input CreateUserInput {
   passwordConfirm: String!
 }
 
+input LoginUserInput {
+  email: String!
+  password: String!
+}
+
 type Mutation {
   createUser(createUserInput: CreateUserInput!): User!
+  signinLocal(loginUserInput: LoginUserInput!): Tokens!
 }
 
 type Query {
@@ -24,6 +30,12 @@ enum Role {
   ADMIN
   CUSTOMER
   SELLER
+}
+
+type Tokens {
+  access_token: String!
+  refresh_token: String!
+  user: User!
 }
 
 type User {
