@@ -8,7 +8,7 @@ import { Tokens } from './types';
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
-  // @Public()
+  @Public()
   @Mutation(() => Tokens)
   signinLocal(
     @Args('loginUserInput') loginUserInput: LoginUserInput,

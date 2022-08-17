@@ -1,10 +1,9 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-import { CreateUserInput } from './dto';
-import { UpdateUserInput } from './dto';
 import { UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
-import { UserInterceptor } from './interceptor/user.interceptor';
+import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { UserInterceptor } from './interceptor';
+import { UsersService } from './users.service';
+import { User } from './entities';
+import { CreateUserInput } from './dto';
 
 @UseInterceptors(UserInterceptor)
 @Resolver(() => User)
@@ -22,8 +21,14 @@ export class UsersResolver {
   }
 
   @Query(() => User, { name: 'user' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.usersService.findOne(id);
+  findOne(
+    @Args('id', { type: () => Int, nullable: true }) id?: number | null,
+    @Args('email', { type: () => String, nullable: true })
+    email?: string | null,
+    @Args('uniqueID', { type: () => String, nullable: true })
+    uniqueID?: string | null,
+  ) {
+    return this.usersService.findOne({ id, email, uniqueID });
   }
 
   // @Mutation(() => User)

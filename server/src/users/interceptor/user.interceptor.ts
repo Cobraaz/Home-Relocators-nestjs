@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { map, Observable } from 'rxjs';
-import { User } from '../entities/user.entity';
+import { User } from '../entities';
 
 @Injectable()
 export class UserInterceptor implements NestInterceptor {

@@ -1,9 +1,11 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtPayload } from '../../auth/types';
 
-export const GetCurrentUserId = createParamDecorator(
-  (_: undefined, context: ExecutionContext): number => {
-    const request = context.switchToHttp().getRequest();
+export const GetCurrentUserUniqueID = createParamDecorator(
+  (_: undefined, context: ExecutionContext): string => {
+    const ctx = GqlExecutionContext.create(context);
+    const request = ctx.getContext().req;
     const user = request.user as JwtPayload;
     return user.sub;
   },

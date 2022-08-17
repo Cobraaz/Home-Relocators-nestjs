@@ -1,8 +1,8 @@
+import { Injectable } from '@nestjs/common';
 import { customError } from '../utils/CustomError';
 import { PrismaService } from '../prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
-import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
+import { CreateUserInput } from './dto';
+import { UpdateUserInput } from './dto';
 import { User } from '@prisma/client';
 import argon from 'argon2';
 
@@ -24,9 +24,10 @@ export class UsersService {
         },
       ]);
     }
-    const password = await argon.hash(createUserInput.password);
+    let { name, email, password, avatar } = createUserInput;
+    password = await argon.hash(password);
     return this.prisma.user.create({
-      data: { ...createUserInput, password },
+      data: { name, email, password, avatar },
     });
   }
 
@@ -34,8 +35,30 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  findOne(obj: {
+    id?: number;
+    email?: string;
+    uniqueID?: string;
+  }): Promise<User> {
+    if (obj.id) {
+      return this.prisma.user.findUnique({
+        where: {
+          id: obj.id,
+        },
+      });
+    } else if (obj.email) {
+      return this.prisma.user.findUnique({
+        where: {
+          email: obj.email,
+        },
+      });
+    } else if (obj.uniqueID) {
+      return this.prisma.user.findUnique({
+        where: {
+          uniqueID: obj.uniqueID,
+        },
+      });
+    }
   }
 
   // update(id: number, updateUserInput: UpdateUserInput) {

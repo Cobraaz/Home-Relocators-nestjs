@@ -18,12 +18,14 @@ enum Role {
 
 model User {
   id        Int      @id @default(autoincrement())
-  uniqueID  String   @default(uuid())
+  uniqueID  String   @unique @default(uuid())
   name      String
   email     String   @unique
   password  String
   role      Role     @default(CUSTOMER)
   avatar    String   @default("https://res.cloudinary.com/cobraaz/image/upload/v1595762337/gez4i626tlesoe3plwn7.jpg")
+  hashedAt  String?
+  hashedRt  String?
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 

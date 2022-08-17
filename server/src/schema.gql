@@ -21,7 +21,7 @@ type Mutation {
 }
 
 type Query {
-  user(id: Int!): User!
+  user(email: String, id: Int, uniqueID: String): User!
   users: [User!]!
 }
 
