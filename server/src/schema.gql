@@ -2,22 +2,16 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-input CreateUserInput {
-  avatar: String
-  email: String!
-  name: String!
-  password: String!
-  passwordConfirm: String!
-}
-
 input LoginUserInput {
   email: String!
   password: String!
 }
 
 type Mutation {
-  createUser(createUserInput: CreateUserInput!): User!
+  logout: Boolean!
+  refreshTokens: Tokens!
   signinLocal(loginUserInput: LoginUserInput!): Tokens!
+  signupLocal(signUpUserInput: SignUpUserInput!): Tokens!
 }
 
 type Query {
@@ -30,6 +24,13 @@ enum Role {
   ADMIN
   CUSTOMER
   SELLER
+}
+
+input SignUpUserInput {
+  email: String!
+  name: String!
+  password: String!
+  passwordConfirm: String!
 }
 
 type Tokens {

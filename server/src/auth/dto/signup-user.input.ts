@@ -9,7 +9,7 @@ import {
 import { Match } from '../decorators';
 
 @InputType()
-export class CreateUserInput {
+export class SignUpUserInput {
   @Field(() => String)
   name: string;
 
@@ -35,9 +35,4 @@ export class CreateUserInput {
   })
   @Match('password')
   passwordConfirm: string;
-
-  @Field(() => String, {
-    nullable: true,
-  })
-  avatar: string;
 }
