@@ -10,6 +10,8 @@ export class Tokens {
   @Field(() => String)
   refresh_token: string;
 
+  uniqueID: string;
+
   @Field(() => User)
   user?: PrismaUser;
 }

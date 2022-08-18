@@ -15,13 +15,14 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   validate(payload: JwtPayload) {
-    let { email, sub } = payload;
+    let { email, sub, role } = payload;
     const decryptedEmail = CryptoJS.AES.decrypt(
       email,
       this.config.get<string>('CRYPTO_KEY'),
     ).toString(CryptoJS.enc.Utf8);
     return {
       email: decryptedEmail,
+      role,
       sub,
     };
   }

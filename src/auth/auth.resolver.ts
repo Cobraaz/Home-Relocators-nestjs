@@ -1,5 +1,13 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Context,
+  Mutation,
+  Parent,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
+import { plainToInstance } from 'class-transformer';
 import {
   GetCurrentUser,
   GetCurrentUserUniqueID,
@@ -7,13 +15,26 @@ import {
 } from '../common/decorators';
 import { AuthService } from './auth.service';
 import { LoginUserInput } from './dto';
-import { SignUpUserInput } from './dto/signup-user.input';
-import { RtGuard } from '../common/guards/rt.guard';
+import { SignUpUserInput } from './dto';
+import { RtGuard } from '../common/guards';
 import { Tokens } from './types';
+import { User } from 'src/users/entities';
+import { UsersService } from '../users/users.service';
 
-@Resolver()
+@Resolver(() => Tokens)
 export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
+
+  @ResolveField(() => User)
+  async user(@Parent() tokens: Tokens, @Context('req') req: any) {
+    const { uniqueID } = tokens;
+    return plainToInstance(User, this.usersService.findOne({ uniqueID }), {
+      excludeExtraneousValues: true,
+    });
+  }
 
   @Public()
   @Mutation(() => Tokens)

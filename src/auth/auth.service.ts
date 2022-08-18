@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Tokens, JwtPayload } from './types';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { customError } from '../utils/CustomError';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -55,6 +56,7 @@ export class AuthService {
     const { access_token, refresh_token } = await this.getTokens(
       user.uniqueID,
       user.email,
+      user.role,
     );
 
     await this.updateRtHash(user.uniqueID, access_token, refresh_token);
@@ -62,7 +64,7 @@ export class AuthService {
     return {
       access_token,
       refresh_token,
-      user,
+      uniqueID: user.uniqueID,
     };
   }
   async signinLocal(loginUserInput: LoginUserInput) {
@@ -83,13 +85,14 @@ export class AuthService {
     const { access_token, refresh_token } = await this.getTokens(
       user.uniqueID,
       user.email,
+      user.role,
     );
     await this.updateRtHash(user.uniqueID, access_token, refresh_token);
 
     return {
       access_token,
       refresh_token,
-      user,
+      uniqueID: user.uniqueID,
     };
   }
 
@@ -120,13 +123,14 @@ export class AuthService {
     const { access_token, refresh_token } = await this.getTokens(
       user.uniqueID,
       user.email,
+      user.role,
     );
     await this.updateRtHash(user.uniqueID, access_token, refresh_token);
 
     return {
       access_token,
       refresh_token,
-      user,
+      uniqueID: user.uniqueID,
     };
   }
 
@@ -144,14 +148,20 @@ export class AuthService {
     });
   }
 
-  async getTokens(uniqueID: string, email: string): Promise<Tokens> {
+  async getTokens(
+    uniqueID: string,
+    email: string,
+    role: Role,
+  ): Promise<Pick<Tokens, 'access_token' | 'refresh_token'>> {
     const encryptedEmail = CryptoJS.AES.encrypt(
       email,
       this.config.get<string>('CRYPTO_KEY'),
     ).toString();
+    
     const jwtPayload: JwtPayload = {
       sub: uniqueID,
       email: encryptedEmail,
+      role,
     };
 
     const [at, rt] = await Promise.all([

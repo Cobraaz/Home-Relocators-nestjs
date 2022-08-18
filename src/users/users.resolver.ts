@@ -1,14 +1,17 @@
-import { UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { UseInterceptors } from '@nestjs/common';
+import { Resolver, Query,  Args, Int } from '@nestjs/graphql';
 import { UserInterceptor } from './interceptor';
 import { UsersService } from './users.service';
 import { User } from './entities';
+import { Roles } from '../common/decorators';
+import { Role } from '@prisma/client';
 
 @UseInterceptors(UserInterceptor)
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
+  @Roles(Role.SELLER)
   @Query(() => [User], { name: 'users' })
   findAll() {
     return this.usersService.findAll();
