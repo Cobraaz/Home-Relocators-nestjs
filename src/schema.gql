@@ -19,13 +19,6 @@ type Query {
   users: [User!]!
 }
 
-"""The Different Types of users."""
-enum Role {
-  ADMIN
-  CUSTOMER
-  SELLER
-}
-
 input SignUpUserInput {
   email: String!
   name: String!
@@ -45,7 +38,7 @@ type User {
   email: String!
   id: Int!
   name: String!
-  role: Role!
+  role: String!
   uniqueID: String!
   updatedAt: String!
 }

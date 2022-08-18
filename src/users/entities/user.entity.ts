@@ -30,9 +30,9 @@ export class User {
   @Expose()
   email: string;
 
-  @Field(() => Role)
+  @Field(() => String)
   @Expose()
-  role: Role;
+  role: string;
 
   @Field(() => String)
   @Expose()
