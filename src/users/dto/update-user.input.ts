@@ -5,4 +5,7 @@ import { SignUpUserInput } from './../../auth/dto/signup-user.input';
 export class UpdateUserInput extends PartialType(SignUpUserInput) {
   @Field(() => Int)
   id: number;
+
+  @Field(() => String)
+  uniqueID: string;
 }

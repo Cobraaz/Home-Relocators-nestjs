@@ -5,12 +5,15 @@ import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { GraphQLError } from 'graphql';
-import { ValidationError } from 'class-validator';
+import { APP_GUARD } from '@nestjs/core';
+import responseCachePlugin from 'apollo-server-plugin-response-cache';
+import { ApolloServerPluginCacheControl } from 'apollo-server-core/dist/plugin/cacheControl';
+
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { APP_GUARD } from '@nestjs/core';
 import { AtGuard } from './common/guards';
 import { RolesGuard } from './common/guards';
+import { CachingModule } from './caching/caching.module';
 
 @Module({
   imports: [
@@ -27,10 +30,15 @@ import { RolesGuard } from './common/guards';
         // }
         return err;
       },
+      plugins: [
+        ApolloServerPluginCacheControl({ defaultMaxAge: 10 }), // optional
+        responseCachePlugin(),
+      ],
     }),
     UsersModule,
     PrismaModule,
     AuthModule,
+    CachingModule,
   ],
   providers: [
     {

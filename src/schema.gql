@@ -10,8 +10,10 @@ input LoginUserInput {
 type Mutation {
   logout: Boolean!
   refreshTokens: Tokens!
+  removeUser(email: String, id: Int, uniqueID: String): User!
   signinLocal(loginUserInput: LoginUserInput!): Tokens!
   signupLocal(signUpUserInput: SignUpUserInput!): Tokens!
+  updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
 type Query {
@@ -30,6 +32,15 @@ type Tokens {
   access_token: String!
   refresh_token: String!
   user: User!
+}
+
+input UpdateUserInput {
+  email: String
+  id: Int!
+  name: String
+  password: String
+  passwordConfirm: String
+  uniqueID: String!
 }
 
 type User {

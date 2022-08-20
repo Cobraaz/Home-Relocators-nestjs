@@ -1,19 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { customError } from '../utils/CustomError';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserInput } from './dto';
 import { User } from '@prisma/client';
-
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+   
+  ) {}
 
-  findAll(): Promise<User[]> {
+  async findAll(): Promise<User[]> {
     return this.prisma.user.findMany();
   }
 
-  findOne(obj: {
+  async findOne(obj: {
     id?: number;
     email?: string;
     uniqueID?: string;
@@ -39,11 +41,45 @@ export class UsersService {
     }
   }
 
-  // update(id: number, updateUserInput: UpdateUserInput) {
-  //   return `This action updates a #${id} user`;
-  // }
+  async remove(obj: {
+    id?: number;
+    email?: string;
+    uniqueID?: string;
+  }): Promise<User> {
+    if (obj.id) {
+      return this.prisma.user.delete({
+        where: {
+          id: obj.id,
+        },
+      });
+    } else if (obj.email) {
+      return this.prisma.user.delete({
+        where: {
+          email: obj.email,
+        },
+      });
+    } else if (obj.uniqueID) {
+      return this.prisma.user.delete({
+        where: {
+          uniqueID: obj.uniqueID,
+        },
+      });
+    }
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} user`;
-  // }
+  update(updateUserInput: UpdateUserInput) {
+    const { id, uniqueID, name, email, password } = updateUserInput;
+    if (id || uniqueID || email)
+      return this.prisma.user.update({
+        where: {
+          ...(id && { id }),
+          ...(uniqueID && { uniqueID }),
+          ...(email && { email }),
+        },
+        data: {
+          ...(name && { name }),
+          ...(password && { password }),
+        },
+      });
+  }
 }

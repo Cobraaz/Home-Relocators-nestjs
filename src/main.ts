@@ -6,8 +6,6 @@ import { AppModule } from './app.module';
 import { CustomError } from './utils/CustomError';
 
 const formatValidationError = (errors: ValidationError[]) => {
-  // console.log(errors);
-
   return CustomError(errors, new BadRequestException());
 
   // return new BadRequestException({});
