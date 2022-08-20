@@ -1,5 +1,13 @@
-import { UseInterceptors } from '@nestjs/common';
-import { Resolver, Query, Args, Int, Mutation } from '@nestjs/graphql';
+import { UseInterceptors, ExecutionContext } from '@nestjs/common';
+import {
+  Resolver,
+  Query,
+  Args,
+  Int,
+  Mutation,
+  Context,
+  GraphQLExecutionContext,
+} from '@nestjs/graphql';
 import { UserInterceptor } from './interceptor';
 import { UsersService } from './users.service';
 import { User } from './entities';
@@ -16,8 +24,8 @@ export class UsersResolver {
 
   @Query(() => [User], { name: 'users' })
   @CacheControl({ maxAge: 10 })
-  findAll() {
-    console.log("first")
+  findAll(@Context() context: any) {
+    context.res.cookie('__rfToken', 'hey its working');
     return this.usersService.findAll();
   }
 

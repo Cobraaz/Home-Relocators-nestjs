@@ -157,7 +157,7 @@ export class AuthService {
       email,
       this.config.get<string>('CRYPTO_KEY'),
     ).toString();
-    
+
     const jwtPayload: JwtPayload = {
       sub: uniqueID,
       email: encryptedEmail,
@@ -179,5 +179,20 @@ export class AuthService {
       access_token: at,
       refresh_token: rt,
     };
+  }
+
+  async validToken(email: string, at: string) {
+    const { hashedAt } = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        hashedAt: true,
+      },
+    });
+    const atMatches = await argon.verify(hashedAt, at);
+    if (!atMatches) {
+      throw new ForbiddenException('Access Denied');
+    }
   }
 }

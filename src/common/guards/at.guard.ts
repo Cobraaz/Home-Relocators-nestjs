@@ -11,7 +11,8 @@ export class AtGuard extends AuthGuard('jwt') {
 
   getRequest(context: ExecutionContext) {
     const ctx = GqlExecutionContext.create(context);
-    return ctx.getContext().req;
+    const req = ctx.getContext().req;
+    return req;
   }
 
   canActivate(context: ExecutionContext) {

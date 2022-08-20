@@ -30,6 +30,11 @@ import { CachingModule } from './caching/caching.module';
         // }
         return err;
       },
+      cors: {
+        credentials: true,
+        origin: true,
+      },
+      context: ({ req, res }) => ({ req, res }),
       plugins: [
         ApolloServerPluginCacheControl({ defaultMaxAge: 10 }), // optional
         responseCachePlugin(),

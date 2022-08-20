@@ -4,22 +4,31 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import CryptoJS from 'crypto-js';
 import { JwtPayload } from '../types';
+import { AuthService } from '../auth.service';
+import { ContextIdFactory, ModuleRef } from '@nestjs/core';
 
 @Injectable()
 export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private config: ConfigService) {
+  constructor(private config: ConfigService, private moduleRef: ModuleRef) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: config.get<string>('AT_SECRET'),
+      passReqToCallback: true,
     });
   }
 
-  validate(payload: JwtPayload) {
+  async validate(request: any, payload: JwtPayload, headers: Headers) {
+    const accessToken = request.headers.authorization.split(' ')[1];
     let { email, sub, role } = payload;
     const decryptedEmail = CryptoJS.AES.decrypt(
       email,
       this.config.get<string>('CRYPTO_KEY'),
     ).toString(CryptoJS.enc.Utf8);
+
+    const contextId = ContextIdFactory.getByRequest(request);
+    const authService = await this.moduleRef.resolve(AuthService, contextId);
+    await authService.validToken(decryptedEmail, accessToken);
+
     return {
       email: decryptedEmail,
       role,
