@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import CryptoJS from 'crypto-js';
-import { JwtPayload } from '../types';
+import { JwtPayload } from '../types/jwtPayload.type';
 import { AuthService } from '../auth.service';
 import { ContextIdFactory, ModuleRef } from '@nestjs/core';
 
@@ -17,9 +17,9 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(request: any, payload: JwtPayload, headers: Headers) {
+  async validate(request: any, payload: JwtPayload) {
     const accessToken = request.headers.authorization.split(' ')[1];
-    let { email, sub, role } = payload;
+    const { email, sub, role } = payload;
     const decryptedEmail = CryptoJS.AES.decrypt(
       email,
       this.config.get<string>('CRYPTO_KEY'),

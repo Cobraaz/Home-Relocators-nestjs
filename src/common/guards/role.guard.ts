@@ -2,7 +2,7 @@ import { Reflector } from '@nestjs/core';
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { Role } from '@prisma/client';
-import { JwtPayload } from '../../auth/types';
+import { JwtPayload } from '../../auth/types/jwtPayload.type';
 import { ROLE_KEY } from '../decorators/role.decorator';
 
 @Injectable()

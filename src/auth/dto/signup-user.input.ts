@@ -6,7 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Match } from '../decorators';
+import { Match } from '../decorators/match.decorator';
 
 @InputType()
 export class SignUpUserInput {

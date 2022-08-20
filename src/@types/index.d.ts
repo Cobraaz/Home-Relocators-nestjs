@@ -1,36 +1,14 @@
-import { Types } from 'mongoose';
-import { IUserDocument } from '../../models/users';
+import express from 'express';
 
 declare global {
-  namespace Express {
-    interface AuthInfo {
-      email?: string;
-      name?: string;
-      given_name?: string;
-      family_name?: string;
-    }
-    interface Request {
-      // user?: Record<
-      //   IUserDocument & {
-      //     id: Types.ObjectId;
-      //   }
-      // >;
+  interface GqlExecutionContext {
+    req: express.Request;
+    res: express.Response;
+  }
 
-      // authInfo?: {
-      //   email?: string;
-      // };
-
-      // authInfo?:
-      //   | AuthInfo
-      //   | undefined
-      //   | {
-      //       email?: string;
-      //     };
-
-      localUser: {
-        id?: string;
-        role?: string;
-      };
-    }
+  interface Request {
+    cookies: {
+      __pchub_refresh_token__?: string;
+    };
   }
 }

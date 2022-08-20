@@ -1,24 +1,22 @@
-import { UseGuards } from '@nestjs/common';
+import { RTInterceptor } from './interceptor/refresh-token.interceptor';
+import { UseGuards, UseInterceptors } from '@nestjs/common';
 import {
   Args,
-  Context,
   Mutation,
   Parent,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import { plainToInstance } from 'class-transformer';
-import {
-  GetCurrentUser,
-  GetCurrentUserUniqueID,
-  Public,
-} from '../common/decorators';
+import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
+import { GetCurrentUserUniqueID } from '../common/decorators/get-current-user-id.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { LoginUserInput } from './dto';
-import { SignUpUserInput } from './dto';
-import { RtGuard } from '../common/guards';
-import { Tokens } from './types';
-import { User } from 'src/users/entities';
+import { LoginUserInput } from './dto/login-user.input';
+import { SignUpUserInput } from './dto/signup-user.input';
+import { RtGuard } from '../common/guards/rt.guard';
+import { Tokens } from './types/tokens.type';
+import { User } from 'src/users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 
 @Resolver(() => Tokens)
@@ -29,7 +27,7 @@ export class AuthResolver {
   ) {}
 
   @ResolveField(() => User)
-  async user(@Parent() tokens: Tokens, @Context('req') req: any) {
+  async user(@Parent() tokens: Tokens) {
     const { uniqueID } = tokens;
     return plainToInstance(User, this.usersService.findOne({ uniqueID }), {
       excludeExtraneousValues: true,
@@ -44,6 +42,7 @@ export class AuthResolver {
     return this.authService.signupLocal(signUpUserInput);
   }
 
+  @UseInterceptors(RTInterceptor)
   @Public()
   @Mutation(() => Tokens)
   signinLocal(

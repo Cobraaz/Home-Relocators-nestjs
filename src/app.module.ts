@@ -11,8 +11,8 @@ import { ApolloServerPluginCacheControl } from 'apollo-server-core/dist/plugin/c
 
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { AtGuard } from './common/guards';
-import { RolesGuard } from './common/guards';
+import { AtGuard } from './common/guards/at.guard';
+import { RolesGuard } from './common/guards/role.guard';
 import { CachingModule } from './caching/caching.module';
 
 @Module({

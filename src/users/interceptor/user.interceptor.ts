@@ -1,16 +1,11 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, Injectable, NestInterceptor } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { map, Observable } from 'rxjs';
-import { User } from '../entities';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class UserInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, handler: CallHandler): Observable<any> {
+  intercept(_: any, handler: CallHandler): Observable<any> {
     return handler.handle().pipe(
       map((data: any) => {
         // run something before the response is sent out.

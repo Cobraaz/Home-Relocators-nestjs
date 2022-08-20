@@ -1,15 +1,11 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserInput } from './dto';
+import { UpdateUserInput } from './dto/update-user.input';
 import { User } from '@prisma/client';
-import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private prisma: PrismaService,
-   
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async findAll(): Promise<User[]> {
     return this.prisma.user.findMany();

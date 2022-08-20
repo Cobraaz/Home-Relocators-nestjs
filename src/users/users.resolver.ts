@@ -1,19 +1,11 @@
-import { UseInterceptors, ExecutionContext } from '@nestjs/common';
-import {
-  Resolver,
-  Query,
-  Args,
-  Int,
-  Mutation,
-  Context,
-  GraphQLExecutionContext,
-} from '@nestjs/graphql';
-import { UserInterceptor } from './interceptor';
+import { UseInterceptors } from '@nestjs/common';
+import { Resolver, Query, Args, Int, Mutation } from '@nestjs/graphql';
+import { UserInterceptor } from './interceptor/user.interceptor';
 import { UsersService } from './users.service';
-import { User } from './entities';
-import { Roles } from '../common/decorators';
+import { User } from './entities/user.entity';
+import { Roles } from '../common/decorators/role.decorator';
 import { Role } from '@prisma/client';
-import { UpdateUserInput } from './dto';
+import { UpdateUserInput } from './dto/update-user.input';
 import { CacheControl } from 'nestjs-gql-cache-control';
 
 @Roles(Role.ADMIN)
@@ -24,8 +16,7 @@ export class UsersResolver {
 
   @Query(() => [User], { name: 'users' })
   @CacheControl({ maxAge: 10 })
-  findAll(@Context() context: any) {
-    context.res.cookie('__rfToken', 'hey its working');
+  findAll() {
     return this.usersService.findAll();
   }
 

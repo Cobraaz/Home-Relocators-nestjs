@@ -1,17 +1,15 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 import { User as PrismaUser } from '@prisma/client';
-import { User } from '../../users/entities';
+import { User } from '../../users/entities/user.entity';
 
 @ObjectType()
 export class Tokens {
   @Field(() => String)
   access_token: string;
 
-  @Field(() => String)
-  refresh_token: string;
-
-  uniqueID: string;
-
   @Field(() => User)
   user?: PrismaUser;
+
+  uniqueID: string;
+  refresh_token: string;
 }
