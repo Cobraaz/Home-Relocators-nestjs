@@ -16,6 +16,8 @@ import { customError } from '../utils/CustomError';
 import { Role } from '@prisma/client';
 import { EmailActivationToken } from './types/emailActivationToken.type';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { MailService } from 'src/mail/mail.service';
+import { EmailActivationInput } from './dto/emailActivation.input';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async signupLocal(
@@ -65,12 +68,14 @@ export class AuthService {
       },
     });
 
+    this.mailService.sendUserConfirmation(signUpUserInput, activation_token);
+
     return {
-      activation_token,
+      msg: 'Register Success! Please activate your email to start.',
     };
   }
 
-  async activateAccount(token: EmailActivationToken) {
+  async activateAccount(token: EmailActivationInput) {
     const { activation_token } = token;
 
     // It is used to delete the entry in emailActivation model after activating the account
@@ -151,6 +156,7 @@ export class AuthService {
         access_token,
         refresh_token,
         uniqueID: user.uniqueID,
+        msg: 'Account has been activated!',
       };
     } catch (error) {
       throw new ForbiddenException('Access Denied');
@@ -164,6 +170,9 @@ export class AuthService {
   }
 
   async signinLocal(loginUserInput: LoginUserInput) {
+    // const testAccount = await nodemailer.createTestAccount();
+    // console.log(testAccount);
+
     const user = await this.prisma.user.findUnique({
       where: {
         email: loginUserInput.email,
@@ -189,6 +198,7 @@ export class AuthService {
       access_token,
       refresh_token,
       uniqueID: user.uniqueID,
+      msg: 'Login Success!',
     };
   }
 

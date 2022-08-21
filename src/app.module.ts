@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { AtGuard } from './common/guards/at.guard';
 import { RolesGuard } from './common/guards/role.guard';
 import { CachingModule } from './caching/caching.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { CachingModule } from './caching/caching.module';
     PrismaModule,
     AuthModule,
     CachingModule,
+    MailModule,
   ],
   providers: [
     {

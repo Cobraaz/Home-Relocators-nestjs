@@ -7,7 +7,7 @@ input EmailActivationInput {
 }
 
 type EmailActivationToken {
-  activation_token: String!
+  msg: String!
 }
 
 input LoginUserInput {
@@ -39,6 +39,7 @@ input SignUpUserInput {
 
 type Tokens {
   access_token: String!
+  msg: String
   user: User!
 }
 
