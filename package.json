@@ -14,7 +14,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "gen-env": "sed 's/=.*/=/' .env > .env.example"
+    "gen-env": "npx gen-env-types .env -o src/@types/env.d.ts -e ."
   },
   "dependencies": {
     "@nestjs/apollo": "^10.0.19",
@@ -32,6 +32,7 @@
     "cache-manager": "^4.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
+    "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "crypto-js": "^4.1.1",
     "graphql": "^16.5.0",

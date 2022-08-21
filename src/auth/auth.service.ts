@@ -1,8 +1,11 @@
 import { LoginUserInput } from './dto/login-user.input';
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import argon from 'argon2';
 import CryptoJS from 'crypto-js';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +14,8 @@ import { JwtPayload } from './types/jwtPayload.type';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { customError } from '../utils/CustomError';
 import { Role } from '@prisma/client';
+import { EmailActivationToken } from './types/emailActivationToken.type';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
 @Injectable()
 export class AuthService {
@@ -20,15 +25,19 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  async signupLocal(signUpUserInput: SignUpUserInput): Promise<Tokens | void> {
-    let { name, email, password } = signUpUserInput;
+  async signupLocal(
+    signUpUserInput: SignUpUserInput,
+  ): Promise<EmailActivationToken> {
+    const { name, email } = signUpUserInput;
+    let { password } = signUpUserInput;
     const findEmail = await this.prisma.user.findFirst({
       where: {
         email,
       },
     });
+
     if (findEmail) {
-      return customError([
+      customError([
         {
           property: 'email',
           constraints: 'Email already exists',
@@ -37,37 +46,123 @@ export class AuthService {
     }
     password = await argon.hash(password);
 
-    const user = await this.prisma.user
-      .create({
-        data: {
-          name,
-          email,
-          password,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            throw new ForbiddenException('Credentials incorrect');
-          }
-        }
-        throw error;
-      });
+    const activation_token = await this.getActivationToken(email);
 
-    const { access_token, refresh_token } = await this.getTokens(
-      user.uniqueID,
-      user.email,
-      user.role,
-    );
+    await this.prisma.emailActivation.deleteMany({
+      where: {
+        email,
+      },
+    });
 
-    await this.updateRtHash(user.uniqueID, access_token, refresh_token);
+    const activationToken = await argon.hash(activation_token);
+
+    await this.prisma.emailActivation.create({
+      data: {
+        name,
+        email,
+        password,
+        activationToken,
+      },
+    });
 
     return {
-      access_token,
-      refresh_token,
-      uniqueID: user.uniqueID,
+      activation_token,
     };
   }
+
+  async activateAccount(token: EmailActivationToken) {
+    const { activation_token } = token;
+
+    // It is used to delete the entry in emailActivation model after activating the account
+    let deleteEmail = '';
+    try {
+      const verifyActivationToken: { email: string } =
+        await this.jwtService.verifyAsync(activation_token, {
+          secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
+        });
+
+      if (!verifyActivationToken && !verifyActivationToken.email) {
+        throw new ForbiddenException('Access Denied');
+      }
+
+      const decryptedEmail = CryptoJS.AES.decrypt(
+        verifyActivationToken.email,
+        this.config.get<string>('CRYPTO_KEY'),
+      ).toString(CryptoJS.enc.Utf8);
+
+      const findEmail = await this.prisma.user.findFirst({
+        where: {
+          email: decryptedEmail,
+        },
+      });
+      if (findEmail) {
+        throw new BadRequestException('User already exists');
+      }
+
+      const emailValidationDetail = await this.prisma.emailActivation.findFirst(
+        {
+          where: {
+            email: decryptedEmail,
+          },
+        },
+      );
+
+      const { name, email, activationToken } = emailValidationDetail;
+
+      const verifyTokenWithDB = await argon.verify(
+        activationToken,
+        activation_token,
+      );
+
+      if (!verifyTokenWithDB) {
+        throw new ForbiddenException('Access Denied');
+      }
+      deleteEmail = email;
+      let { password } = emailValidationDetail;
+
+      password = await argon.hash(password);
+
+      const user = await this.prisma.user
+        .create({
+          data: {
+            name,
+            email,
+            password,
+          },
+        })
+        .catch((error) => {
+          if (error instanceof PrismaClientKnownRequestError) {
+            if (error.code === 'P2002') {
+              throw new ForbiddenException('Credentials incorrect');
+            }
+          }
+          throw error;
+        });
+
+      const { access_token, refresh_token } = await this.getTokens(
+        user.uniqueID,
+        user.email,
+        user.role,
+      );
+
+      await this.updateRtHash(user.uniqueID, access_token, refresh_token);
+
+      return {
+        access_token,
+        refresh_token,
+        uniqueID: user.uniqueID,
+      };
+    } catch (error) {
+      throw new ForbiddenException('Access Denied');
+    } finally {
+      await this.prisma.emailActivation.deleteMany({
+        where: {
+          email: deleteEmail,
+        },
+      });
+    }
+  }
+
   async signinLocal(loginUserInput: LoginUserInput) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -195,5 +290,23 @@ export class AuthService {
     if (!atMatches) {
       throw new ForbiddenException('Access Denied');
     }
+  }
+
+  async getActivationToken(email: string): Promise<string> {
+    const encryptedEmail = CryptoJS.AES.encrypt(
+      email,
+      this.config.get<string>('CRYPTO_KEY'),
+    ).toString();
+
+    const jwtPayload = {
+      email: encryptedEmail,
+    };
+
+    const activation_token = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
+      expiresIn: '15m',
+    });
+
+    return activation_token;
   }
 }

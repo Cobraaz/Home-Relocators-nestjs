@@ -18,6 +18,8 @@ import { RtGuard } from '../common/guards/rt.guard';
 import { Tokens } from './types/tokens.type';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from '../users/users.service';
+import { EmailActivationToken } from './types/emailActivationToken.type';
+import { EmailActivationInput } from './dto/emailActivation.input';
 
 @Resolver(() => Tokens)
 export class AuthResolver {
@@ -35,11 +37,18 @@ export class AuthResolver {
   }
 
   @Public()
-  @Mutation(() => Tokens)
+  @Mutation(() => EmailActivationToken)
   signupLocal(
     @Args('signUpUserInput') signUpUserInput: SignUpUserInput,
-  ): Promise<Tokens | void> {
+  ): Promise<EmailActivationToken> {
     return this.authService.signupLocal(signUpUserInput);
+  }
+
+  @UseInterceptors(RTInterceptor)
+  @Public()
+  @Mutation(() => Tokens)
+  activateAccount(@Args('token') token: EmailActivationInput): Promise<Tokens> {
+    return this.authService.activateAccount(token);
   }
 
   @UseInterceptors(RTInterceptor)

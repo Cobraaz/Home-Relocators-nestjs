@@ -3,6 +3,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { CustomError } from './utils/CustomError';
 
@@ -24,6 +25,8 @@ async function bootstrap() {
       forbidUnknownValues: false,
     }),
   );
+  app.use(compression());
+
   await app.listen(PORT);
 }
 bootstrap();

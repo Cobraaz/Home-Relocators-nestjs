@@ -13,7 +13,7 @@ export function CustomError(
 
   const formattedErrors = object.reduce(
     (result: string[], current: string[]) => {
-      let key: any = Object.keys(current);
+      const key: any = Object.keys(current);
       result[key] = current[key];
       return result;
     },

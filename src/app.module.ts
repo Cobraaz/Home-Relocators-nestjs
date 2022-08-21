@@ -20,8 +20,9 @@ import { CachingModule } from './caching/caching.module';
     ConfigModule.forRoot({ isGlobal: true }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      playground: process.env.NODE_ENV === 'development',
       formatError: (err: GraphQLError) => {
         // if (err.originalError instanceof ArgumentValidationError) {
         // const errorMessage = err.extensions?.exception.validationErrors;

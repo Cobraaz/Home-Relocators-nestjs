@@ -2,17 +2,26 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input EmailActivationInput {
+  activation_token: String!
+}
+
+type EmailActivationToken {
+  activation_token: String!
+}
+
 input LoginUserInput {
   email: String!
   password: String!
 }
 
 type Mutation {
+  activateAccount(token: EmailActivationInput!): Tokens!
   logout: Boolean!
   refreshTokens: Tokens!
   removeUser(email: String, id: Int, uniqueID: String): User!
   signinLocal(loginUserInput: LoginUserInput!): Tokens!
-  signupLocal(signUpUserInput: SignUpUserInput!): Tokens!
+  signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationToken!
   updateUser(updateUserInput: UpdateUserInput!): User!
 }
 

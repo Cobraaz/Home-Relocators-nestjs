@@ -21,6 +21,12 @@ export class RTInterceptor implements NestInterceptor {
         response.cookie(
           '__pchub_refresh_token__',
           'Bearer ' + data.refresh_token,
+          {
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+          },
         );
         return data;
       }),
