@@ -3,7 +3,7 @@ import { User as PrismaUser } from '@prisma/client';
 import { User } from '../../users/entities/user.entity';
 
 @ObjectType()
-export class Tokens {
+export class TokensResponse {
   @Field(() => String)
   access_token: string;
 

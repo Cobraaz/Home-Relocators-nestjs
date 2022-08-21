@@ -15,13 +15,15 @@ import { AuthService } from './auth.service';
 import { LoginUserInput } from './dto/login-user.input';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { RtGuard } from '../common/guards/rt.guard';
-import { Tokens } from './types/tokens.type';
+import { TokensResponse } from './entities/token.entity-response';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from '../users/users.service';
-import { EmailActivationToken } from './types/emailActivationToken.type';
+import { EmailActivationResponse } from './entities/emailActivation-response.entity';
 import { EmailActivationInput } from './dto/emailActivation.input';
+import { CacheControl } from 'nestjs-gql-cache-control';
+import { ForgetPasswordResponse } from './entities/forgetPassword-response.entity';
 
-@Resolver(() => Tokens)
+@Resolver(() => TokensResponse)
 export class AuthResolver {
   constructor(
     private readonly authService: AuthService,
@@ -29,7 +31,8 @@ export class AuthResolver {
   ) {}
 
   @ResolveField(() => User)
-  async user(@Parent() tokens: Tokens) {
+  @CacheControl({ maxAge: 20 })
+  async user(@Parent() tokens: TokensResponse) {
     const { uniqueID } = tokens;
     return plainToInstance(User, this.usersService.findOne({ uniqueID }), {
       excludeExtraneousValues: true,
@@ -37,26 +40,28 @@ export class AuthResolver {
   }
 
   @Public()
-  @Mutation(() => EmailActivationToken)
+  @Mutation(() => EmailActivationResponse)
   signupLocal(
     @Args('signUpUserInput') signUpUserInput: SignUpUserInput,
-  ): Promise<EmailActivationToken> {
+  ): Promise<EmailActivationResponse> {
     return this.authService.signupLocal(signUpUserInput);
   }
 
   @UseInterceptors(RTInterceptor)
   @Public()
-  @Mutation(() => Tokens)
-  activateAccount(@Args('token') token: EmailActivationInput): Promise<Tokens> {
+  @Mutation(() => TokensResponse)
+  activateAccount(
+    @Args('token') token: EmailActivationInput,
+  ): Promise<TokensResponse> {
     return this.authService.activateAccount(token);
   }
 
   @UseInterceptors(RTInterceptor)
   @Public()
-  @Mutation(() => Tokens)
+  @Mutation(() => TokensResponse)
   signinLocal(
     @Args('loginUserInput') loginUserInput: LoginUserInput,
-  ): Promise<Tokens> {
+  ): Promise<TokensResponse> {
     return this.authService.signinLocal(loginUserInput);
   }
 
@@ -67,11 +72,25 @@ export class AuthResolver {
 
   @Public()
   @UseGuards(RtGuard)
-  @Mutation(() => Tokens)
+  @Mutation(() => TokensResponse)
   refreshTokens(
     @GetCurrentUserUniqueID() uniqueID: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
-  ): Promise<Tokens> {
+  ): Promise<TokensResponse> {
     return this.authService.refreshTokens(uniqueID, refreshToken);
+  }
+
+  @Public()
+  @Mutation(() => ForgetPasswordResponse)
+  forgetPassword(
+    @Args('email') email: string,
+  ): Promise<ForgetPasswordResponse> {
+    return this.authService.forgetPassword(email);
+  }
+
+  @Public()
+  @Mutation(() => ForgetPasswordResponse)
+  resetPassword(@Args('email') email: string): Promise<ForgetPasswordResponse> {
+    return this.authService.forgetPassword(email);
   }
 }

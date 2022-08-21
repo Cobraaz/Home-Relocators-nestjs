@@ -1,5 +1,5 @@
 import { UseInterceptors } from '@nestjs/common';
-import { Resolver, Query, Args, Int, Mutation } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { UserInterceptor } from './interceptor/user.interceptor';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
@@ -7,44 +7,38 @@ import { Roles } from '../common/decorators/role.decorator';
 import { Role } from '@prisma/client';
 import { UpdateUserInput } from './dto/update-user.input';
 import { CacheControl } from 'nestjs-gql-cache-control';
+import { FindOneUserInput } from './dto/findOne-user.input';
+import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
 
-@Roles(Role.ADMIN)
+@Roles([Role.ADMIN])
 @UseInterceptors(UserInterceptor)
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Query(() => [User], { name: 'users' })
-  @CacheControl({ maxAge: 10 })
+  @Query(() => [User], { name: 'users', nullable: true })
+  @CacheControl({ maxAge: 20 })
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Query(() => User, { name: 'user' })
-  findOne(
-    @Args('id', { type: () => Int, nullable: true }) id?: number | null,
-    @Args('email', { type: () => String, nullable: true })
-    email?: string | null,
-    @Args('uniqueID', { type: () => String, nullable: true })
-    uniqueID?: string | null,
-  ) {
-    return this.usersService.findOne({ id, email, uniqueID });
+  @Query(() => User, { name: 'user', nullable: true })
+  @CacheControl({ maxAge: 10 })
+  findOne(@Args('findOneUserInput') findOneUserInput: FindOneUserInput) {
+    return this.usersService.findOne(findOneUserInput);
   }
 
+  @Roles([Role.CUSTOMER, Role.SELLER])
   @Mutation(() => User)
   updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return this.usersService.update(updateUserInput);
   }
 
-  // @Roles(Role.ADMIN)
   @Mutation(() => User)
   removeUser(
-    @Args('id', { type: () => Int, nullable: true }) id?: number | null,
-    @Args('email', { type: () => String, nullable: true })
-    email?: string | null,
-    @Args('uniqueID', { type: () => String, nullable: true })
-    uniqueID?: string | null,
+    @GetCurrentUser('role') role: string,
+    @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
   ) {
-    return this.usersService.remove({ id, email, uniqueID });
+    return this.usersService.remove(findOneUserInput);
   }
 }

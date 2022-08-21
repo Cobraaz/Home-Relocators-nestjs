@@ -6,7 +6,17 @@ input EmailActivationInput {
   activation_token: String!
 }
 
-type EmailActivationToken {
+type EmailActivationResponse {
+  msg: String!
+}
+
+input FindOneUserInput {
+  email: String
+  id: Int
+  uniqueID: String
+}
+
+type ForgetPasswordResponse {
   msg: String!
 }
 
@@ -16,18 +26,20 @@ input LoginUserInput {
 }
 
 type Mutation {
-  activateAccount(token: EmailActivationInput!): Tokens!
+  activateAccount(token: EmailActivationInput!): TokensResponse!
+  forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
-  refreshTokens: Tokens!
-  removeUser(email: String, id: Int, uniqueID: String): User!
-  signinLocal(loginUserInput: LoginUserInput!): Tokens!
-  signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationToken!
+  refreshTokens: TokensResponse!
+  removeUser(findOneUserInput: FindOneUserInput!): User!
+  resetPassword(email: String!): ForgetPasswordResponse!
+  signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
+  signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
   updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
 type Query {
-  user(email: String, id: Int, uniqueID: String): User!
-  users: [User!]!
+  user(findOneUserInput: FindOneUserInput!): User
+  users: [User!]
 }
 
 input SignUpUserInput {
@@ -37,7 +49,7 @@ input SignUpUserInput {
   passwordConfirm: String!
 }
 
-type Tokens {
+type TokensResponse {
   access_token: String!
   msg: String
   user: User!
@@ -45,11 +57,11 @@ type Tokens {
 
 input UpdateUserInput {
   email: String
-  id: Int!
+  id: Int
   name: String
   password: String
   passwordConfirm: String
-  uniqueID: String!
+  uniqueID: String
 }
 
 type User {

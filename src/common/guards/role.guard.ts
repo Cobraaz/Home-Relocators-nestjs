@@ -10,7 +10,7 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role>(ROLE_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLE_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -20,11 +20,12 @@ export class RolesGuard implements CanActivate {
     const ctx = GqlExecutionContext.create(context);
     const request = ctx.getContext().req;
     const user = request.user as JwtPayload;
-    if (user.role === requiredRoles) {
+    if (user.role === Role.ADMIN) {
       return true;
-    } else if (user.role === Role.ADMIN) {
-      return true;
+    } else if (requiredRoles.length) {
+      return requiredRoles.includes(user.role);
     }
+
     return false;
   }
 }

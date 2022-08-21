@@ -3,9 +3,9 @@ import { SignUpUserInput } from './../../auth/dto/signup-user.input';
 
 @InputType()
 export class UpdateUserInput extends PartialType(SignUpUserInput) {
-  @Field(() => Int)
-  id: number;
+  @Field(() => Int, { nullable: true })
+  id?: number;
 
-  @Field(() => String)
-  uniqueID: string;
+  @Field(() => String, { nullable: true })
+  uniqueID?: string;
 }

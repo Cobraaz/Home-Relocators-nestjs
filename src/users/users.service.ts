@@ -1,8 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from '@prisma/client';
+import { FindOneUserInput } from './dto/findOne-user.input';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
+type OptionalFlags<T> = {
+  [Property in keyof T]?: boolean;
+};
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -11,71 +20,91 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  async findOne(obj: {
-    id?: number;
-    email?: string;
-    uniqueID?: string;
-  }): Promise<User> {
-    if (obj.id) {
-      return this.prisma.user.findUnique({
-        where: {
-          id: obj.id,
-        },
-      });
-    } else if (obj.email) {
-      return this.prisma.user.findUnique({
-        where: {
-          email: obj.email,
-        },
-      });
-    } else if (obj.uniqueID) {
-      return this.prisma.user.findUnique({
-        where: {
-          uniqueID: obj.uniqueID,
-        },
-      });
+  async findOne(
+    { id, email, uniqueID }: FindOneUserInput,
+    select: OptionalFlags<User> = {},
+  ) {
+    try {
+      if (id) {
+        return this.prisma.user.findUnique({
+          where: {
+            id,
+          },
+          ...(select && { select }),
+        });
+      } else if (email) {
+        return this.prisma.user.findUnique({
+          where: {
+            email,
+          },
+          ...(select && { select }),
+        });
+      } else if (uniqueID) {
+        return this.prisma.user.findUnique({
+          where: {
+            uniqueID,
+          },
+          ...(select && { select }),
+        });
+      }
+    } catch (error) {
+      throw new InternalServerErrorException('Something went wrong.');
     }
   }
 
-  async remove(obj: {
-    id?: number;
-    email?: string;
-    uniqueID?: string;
-  }): Promise<User> {
-    if (obj.id) {
-      return this.prisma.user.delete({
-        where: {
-          id: obj.id,
-        },
-      });
-    } else if (obj.email) {
-      return this.prisma.user.delete({
-        where: {
-          email: obj.email,
-        },
-      });
-    } else if (obj.uniqueID) {
-      return this.prisma.user.delete({
-        where: {
-          uniqueID: obj.uniqueID,
-        },
-      });
+  async remove({ id, email, uniqueID }: FindOneUserInput): Promise<User> {
+    try {
+      if (id) {
+        return this.prisma.user.delete({
+          where: {
+            id,
+          },
+        });
+      } else if (email) {
+        return this.prisma.user.delete({
+          where: {
+            email,
+          },
+        });
+      } else if (uniqueID) {
+        return this.prisma.user.delete({
+          where: {
+            uniqueID,
+          },
+        });
+      }
+    } catch (error) {
+      throw new InternalServerErrorException('Something went wrong.');
     }
   }
 
   update(updateUserInput: UpdateUserInput) {
-    const { id, uniqueID, name, email, password } = updateUserInput;
-    if (id || uniqueID || email)
-      return this.prisma.user.update({
-        where: {
-          ...(id && { id }),
-          ...(uniqueID && { uniqueID }),
-          ...(email && { email }),
-        },
-        data: {
-          ...(name && { name }),
-          ...(password && { password }),
-        },
-      });
+    try {
+      const { id, uniqueID, name, email, password } = updateUserInput;
+
+      return this.prisma.user
+        .update({
+          where: {
+            ...(id && { id }),
+            ...(uniqueID && { uniqueID }),
+            ...(email && { email }),
+          },
+          data: {
+            ...(name && { name }),
+            ...(password && { password }),
+          },
+        })
+        .catch((error) => {
+          if (error instanceof PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new NotFoundException('User not found');
+            }
+          }
+          throw error;
+        });
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Something went wrong.');
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Tokens } from '../types/tokens.type';
+import { TokensResponse } from '../entities/token.entity-response';
 import {
   CallHandler,
   ExecutionContext,
@@ -12,12 +12,15 @@ import { Response } from 'express';
 
 @Injectable()
 export class RTInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Tokens> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<TokensResponse> {
     const ctx = GqlExecutionContext.create(context);
     const response = ctx.getContext().res as Response;
 
     return next.handle().pipe(
-      map((data: Tokens) => {
+      map((data: TokensResponse) => {
         response.cookie(
           '__pchub_refresh_token__',
           'Bearer ' + data.refresh_token,
