@@ -20,13 +20,11 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { MailService } from 'src/mail/mail.service';
 import { EmailActivationInput } from './dto/emailActivation.input';
 import { ResetPasswordInput } from './dto/resetPassword.input';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private userService: UsersService,
     private jwtService: JwtService,
     private config: ConfigService,
     private mailService: MailService,
@@ -37,16 +35,12 @@ export class AuthService {
   ): Promise<EmailActivationResponse> {
     const { name, email } = signUpUserInput;
     let { password } = signUpUserInput;
-    const findEmail = await this.userService.findOne(
-      {
-        email,
-      },
-      {
+    const findEmail = await this.prisma.user.findFirstOrThrow({
+      where: { email },
+      select: {
         email: true,
       },
-    );
-
-    console.log('findEmail', findEmail);
+    });
 
     if (findEmail) {
       customError([
@@ -126,6 +120,11 @@ export class AuthService {
             email,
             password,
           },
+          select: {
+            uniqueID: true,
+            email: true,
+            role: true,
+          },
         })
         .catch((error) => {
           if (error instanceof PrismaClientKnownRequestError) {
@@ -159,6 +158,12 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: {
         email: loginUserInput.email,
+      },
+      select: {
+        email: true,
+        password: true,
+        uniqueID: true,
+        role: true,
       },
     });
 
@@ -218,6 +223,12 @@ export class AuthService {
       where: {
         uniqueID,
       },
+      select: {
+        email: true,
+        uniqueID: true,
+        hashedRt: true,
+        role: true,
+      },
     });
     if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
 
@@ -242,6 +253,10 @@ export class AuthService {
     const user = await this.prisma.user.findFirstOrThrow({
       where: {
         email,
+      },
+      select: {
+        name: true,
+        email: true,
       },
     });
     const resetPasswordToken = await this.getActivationToken(user.email);
@@ -278,6 +293,11 @@ export class AuthService {
           data: {
             password,
           },
+          select: {
+            email: true,
+            uniqueID: true,
+            role: true,
+          },
         })
         .catch((error) => {
           if (error instanceof PrismaClientKnownRequestError) {
@@ -303,7 +323,7 @@ export class AuthService {
         msg: 'Account has been activated!',
       };
     } catch (error) {
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException('Something went wrong');
     }
   }
 
@@ -312,17 +332,22 @@ export class AuthService {
     at: string,
     rt: string,
   ): Promise<void> {
-    const hashedRt = await argon.hash(rt);
-    const hashedAt = await argon.hash(at);
-    await this.prisma.user.update({
-      where: {
-        uniqueID,
-      },
-      data: {
-        hashedRt,
-        hashedAt,
-      },
-    });
+    try {
+      const hashedRt = await argon.hash(rt);
+      const hashedAt = await argon.hash(at);
+      await this.prisma.user.update({
+        where: {
+          uniqueID,
+        },
+        data: {
+          hashedRt,
+          hashedAt,
+        },
+        select: { id: true },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Something went wrong');
+    }
   }
 
   private async getTokensResponse(

@@ -2,15 +2,15 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 @Injectable()
-export class CachingService {
+export class CacheService {
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
   public async get(key: string) {
     return await this.cacheManager.get(key);
   }
 
-  public async set(key: string, value: object) {
-    return await this.cacheManager.set(key, value);
+  public async set(key: string, value: object | string, ttl = 0) {
+    return await this.cacheManager.set(key, value, { ttl });
   }
 
   public async del(key: string) {

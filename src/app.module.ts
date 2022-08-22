@@ -3,17 +3,17 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
-import { UsersModule } from './users/users.module';
 import { GraphQLError } from 'graphql';
 import { APP_GUARD } from '@nestjs/core';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { ApolloServerPluginCacheControl } from 'apollo-server-core/dist/plugin/cacheControl';
 
+import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { AtGuard } from './common/guards/at.guard';
 import { RolesGuard } from './common/guards/role.guard';
-import { CachingModule } from './caching/caching.module';
+import { CacheModule } from './cache/cache.module';
 import { MailModule } from './mail/mail.module';
 
 @Module({
@@ -45,7 +45,7 @@ import { MailModule } from './mail/mail.module';
     UsersModule,
     PrismaModule,
     AuthModule,
-    CachingModule,
+    CacheModule,
     MailModule,
   ],
   providers: [

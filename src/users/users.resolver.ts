@@ -1,3 +1,4 @@
+import { JwtPayload } from './../auth/types/jwtPayload.type';
 import { UseInterceptors } from '@nestjs/common';
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { UserInterceptor } from './interceptor/user.interceptor';
@@ -30,8 +31,11 @@ export class UsersResolver {
 
   @Roles([Role.CUSTOMER, Role.SELLER])
   @Mutation(() => User)
-  updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
-    return this.usersService.update(updateUserInput);
+  updateUser(
+    @Args('updateUserInput') updateUserInput: UpdateUserInput,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.usersService.update(updateUserInput, user);
   }
 
   @Mutation(() => User)
