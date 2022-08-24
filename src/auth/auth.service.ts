@@ -1,9 +1,9 @@
+import { CacheService } from './../cache/cache.service';
 import { LoginUserInput } from './dto/login-user.input';
 import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
-  // BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -14,7 +14,7 @@ import { TokensResponse } from './entities/token.entity-response';
 import { JwtPayload } from './types/jwtPayload.type';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { customError } from '../utils/CustomError';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { EmailActivationResponse } from './entities/emailActivation-response.entity';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { MailService } from 'src/mail/mail.service';
@@ -28,14 +28,26 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private mailService: MailService,
+    private cache: CacheService,
   ) {}
+
+  selectUser = {
+    id: true,
+    uniqueID: true,
+    name: true,
+    email: true,
+    role: true,
+    avatar: true,
+    createdAt: true,
+    updatedAt: true,
+  };
 
   async signupLocal(
     signUpUserInput: SignUpUserInput,
   ): Promise<EmailActivationResponse> {
     const { name, email } = signUpUserInput;
     let { password } = signUpUserInput;
-    const findEmail = await this.prisma.user.findFirstOrThrow({
+    const findEmail = await this.prisma.user.findFirst({
       where: { email },
       select: {
         email: true,
@@ -155,7 +167,14 @@ export class AuthService {
   }
 
   async signinLocal(loginUserInput: LoginUserInput) {
-    const user = await this.prisma.user.findUnique({
+    let user: Partial<User> = {};
+    const cacheUser = await this.cache.get(
+      `user_email_${loginUserInput.email}`,
+    );
+    if (cacheUser && Object.keys(cacheUser).length) {
+      user = cacheUser as User;
+    }
+    user = await this.prisma.user.findUnique({
       where: {
         email: loginUserInput.email,
       },
@@ -196,7 +215,6 @@ export class AuthService {
       user.role,
     );
     await this.updateHash(user.uniqueID, access_token, refresh_token);
-
     return {
       access_token,
       refresh_token,
@@ -327,6 +345,25 @@ export class AuthService {
     }
   }
 
+  async validToken(email: string, at: string) {
+    try {
+      const { hashedAt } = await this.prisma.user.findUnique({
+        where: {
+          email,
+        },
+        select: {
+          hashedAt: true,
+        },
+      });
+      const atMatches = await argon.verify(hashedAt, at);
+      if (!atMatches) {
+        throw new ForbiddenException('Access Denied');
+      }
+    } catch (error) {
+      throw new ForbiddenException('Access Denied');
+    }
+  }
+
   private async updateHash(
     uniqueID: string,
     at: string,
@@ -381,25 +418,6 @@ export class AuthService {
       access_token: at,
       refresh_token: rt,
     };
-  }
-
-  async validToken(email: string, at: string) {
-    try {
-      const { hashedAt } = await this.prisma.user.findUnique({
-        where: {
-          email,
-        },
-        select: {
-          hashedAt: true,
-        },
-      });
-      const atMatches = await argon.verify(hashedAt, at);
-      if (!atMatches) {
-        throw new ForbiddenException('Access Denied');
-      }
-    } catch (error) {
-      throw new ForbiddenException('Access Denied');
-    }
   }
 
   private async getActivationToken(email: string): Promise<string> {

@@ -18,7 +18,7 @@ export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query(() => [User], { name: 'users', nullable: true })
-  @CacheControl({ maxAge: 20 })
+  // @CacheControl({ maxAge: 20 })
   findAll() {
     return this.usersService.findAll();
   }
