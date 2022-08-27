@@ -56,6 +56,7 @@ export class AuthResolver {
   activateAccount(
     @Args('token') token: EmailActivationInput,
   ): Promise<TokensResponse> {
+    console.log('first first');
     return this.authService.activateAccount(token);
   }
 

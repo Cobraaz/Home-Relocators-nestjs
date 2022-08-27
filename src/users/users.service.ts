@@ -26,6 +26,7 @@ export class UsersService {
     }
 
     const users = await this.prisma.user.findMany({
+      where: { deleted: false },
       select: selectUser,
     });
     if (users.length) {
@@ -37,20 +38,21 @@ export class UsersService {
     return users;
   }
 
-  async findOne({ uniqueID }: FindOneUserInput) {
+  async findOne({ uniqueID }: FindOneUserInput): Promise<User> {
     const cacheUser = await this.cache.get(`user_${uniqueID}`);
     if (cacheUser && Object.keys(cacheUser).length) {
       return cacheUser;
     }
     const user = await this.prisma.user
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
           uniqueID,
+          deleted: false,
         },
         select: selectUser,
       })
-      .catch((error) => {
-        throw new NotFoundException(error);
+      .catch(() => {
+        throw new NotFoundException('User not found');
       });
     if (user) {
       this.cache.set(`user_${uniqueID}`, user, ONE_HOUR);
@@ -70,9 +72,12 @@ export class UsersService {
         this.cache.del(`user_${uniqueID}`);
         this.cache.del(`hashedAT_${uniqueID}`);
         this.cache.del(`hashedRT_${uniqueID}`);
-        return this.prisma.user.delete({
+        return this.prisma.user.update({
           where: {
             uniqueID,
+          },
+          data: {
+            deleted: true,
           },
           select: selectUser,
         });
@@ -91,6 +96,8 @@ export class UsersService {
       }
       if (!isAllowed) throw new ForbiddenException('Access Denied');
     }
+
+    await this.findOne({ uniqueID });
 
     const updatedUser = await this.prisma.user
       .update({
@@ -111,6 +118,7 @@ export class UsersService {
         }
         throw error;
       });
+
     try {
       this.cache.set(`user_${updatedUser.uniqueID}`, updatedUser, ONE_HOUR);
       return updatedUser;

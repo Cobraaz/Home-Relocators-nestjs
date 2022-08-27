@@ -1,4 +1,5 @@
-import { ONE_HOUR, SEVEN_DAYS, FIFTEEN_MIN } from './../common/constants';
+import { UsersService } from './../users/users.service';
+import { ONE_HOUR, SEVEN_DAYS } from './../common/constants';
 import { CacheService } from '../config/cache/cache.service';
 import { LoginUserInput } from './dto/login-user.input';
 import {
@@ -16,7 +17,7 @@ import { TokensResponse } from './entities/token.entity-response';
 import { JwtPayload } from './types/jwtPayload.type';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { customError } from '../utils/CustomError';
-import { EmailActivation, Role, User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { EmailActivationResponse } from './entities/emailActivation-response.entity';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { MailService } from 'src/services/mail/mail.service';
@@ -28,6 +29,7 @@ import { selectUser } from 'src/common/helpers';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
+    private users: UsersService,
     private jwtService: JwtService,
     private config: ConfigService,
     private mailService: MailService,
@@ -66,7 +68,7 @@ export class AuthService {
 
     const activationToken = await argon.hash(activation_token);
 
-    const emailActivationData = await this.prisma.emailActivation.create({
+    await this.prisma.emailActivation.create({
       data: {
         name,
         email,
@@ -74,8 +76,6 @@ export class AuthService {
         activationToken,
       },
     });
-
-    this.cache.set(`emailActivate_${email}`, emailActivationData, FIFTEEN_MIN);
 
     this.mailService.sendEmailConfirmation(signUpUserInput, activation_token);
 
@@ -86,7 +86,7 @@ export class AuthService {
 
   async activateAccount(token: EmailActivationInput) {
     const { activation_token } = token;
-
+    console.log(activation_token);
     try {
       const verifyActivationToken: { email: string } =
         await this.jwtService.verifyAsync(activation_token, {
@@ -101,19 +101,12 @@ export class AuthService {
         verifyActivationToken.email,
         this.config.get<string>('CRYPTO_KEY'),
       ).toString(CryptoJS.enc.Utf8);
-      let emailValidationDetail: Partial<EmailActivation> = {};
-      const cacheEmailActivationData = await this.cache.get(
-        `emailActivate_${decryptedEmail}`,
-      );
-      if (cacheEmailActivationData) {
-        emailValidationDetail = cacheEmailActivationData as EmailActivation;
-      } else {
-        emailValidationDetail = await this.prisma.emailActivation.delete({
-          where: {
-            email: decryptedEmail,
-          },
-        });
-      }
+
+      const emailValidationDetail = await this.prisma.emailActivation.delete({
+        where: {
+          email: decryptedEmail,
+        },
+      });
 
       const { name, email, activationToken, password } = emailValidationDetail;
 
@@ -166,9 +159,10 @@ export class AuthService {
   }
 
   async signinLocal(loginUserInput: LoginUserInput) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: {
         email: loginUserInput.email,
+        deleted: false,
       },
       select: {
         email: true,
@@ -231,6 +225,8 @@ export class AuthService {
     });
     this.cache.del(`hashedAT_${uniqueID}`);
     this.cache.del(`hashedRT_${uniqueID}`);
+    this.cache.del(`user_${uniqueID}`);
+
     return true;
   }
 
@@ -364,22 +360,32 @@ export class AuthService {
   }
 
   async validToken(uniqueID: string, at: string) {
-    try {
-      let hashedAt = '';
-      const cacheToken = await this.cache.get(`hashedAT_${uniqueID}`);
-      if (cacheToken && Object.keys(cacheToken).length) {
-        hashedAt = cacheToken;
-      } else {
-        const user = await this.prisma.user.findUnique({
+    let hashedAt = '';
+    const cacheToken = await this.cache.get(`hashedAT_${uniqueID}`);
+    if (cacheToken && Object.keys(cacheToken).length) {
+      hashedAt = cacheToken;
+    } else {
+      const user = await this.prisma.user
+        .findFirstOrThrow({
           where: {
             uniqueID,
+            deleted: false,
           },
           select: {
             hashedAt: true,
           },
+        })
+        .catch((error) => {
+          if (error instanceof PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new NotFoundException('User not found');
+            }
+          }
+          throw error;
         });
-        hashedAt = user.hashedAt;
-      }
+      hashedAt = user.hashedAt;
+    }
+    try {
       if (hashedAt) {
         const atMatches = await argon.verify(hashedAt, at);
         if (!atMatches) {
@@ -398,6 +404,7 @@ export class AuthService {
     at: string,
     rt: string,
   ): Promise<void> {
+    await this.users.findOne({ uniqueID });
     try {
       const hashedRt = await argon.hash(rt);
       const hashedAt = await argon.hash(at);
@@ -405,6 +412,7 @@ export class AuthService {
         hashedRt,
         hashedAt,
       };
+
       const user = await this.prisma.user.update({
         where: {
           uniqueID,

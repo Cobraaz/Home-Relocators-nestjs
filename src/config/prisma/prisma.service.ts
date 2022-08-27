@@ -1,6 +1,9 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { SoftDeleteMiddlware } from './middleware/soft-delete.middleware';
+import { SoftFetchMiddlware } from './middleware/soft-fetch.middleware';
+import { SoftUpdateMiddlware } from './middleware/soft-update.middleware';
 
 @Injectable()
 export class PrismaService
@@ -17,6 +20,9 @@ export class PrismaService
         },
       },
     });
+    // this.$use(SoftDeleteMiddlware());
+    // this.$use(SoftFetchMiddlware());
+    // this.$use(SoftUpdateMiddlware());
   }
 
   async onModuleInit() {
@@ -26,6 +32,28 @@ export class PrismaService
   async onModuleDestroy() {
     await this.$disconnect();
   }
+
+  // async middlware(params, next) {
+  //   // Check incoming query type
+  //   if (params.model == 'User') {
+  //     if (params.action == 'delete') {
+  //       // Delete queries
+  //       // Change action to an update
+  //       params.action = 'update';
+  //       params.args['data'] = { deleted: true, deletedAt: new Date() };
+  //     }
+  //     if (params.action == 'deleteMany') {
+  //       // Delete many queries
+  //       params.action = 'updateMany';
+  //       if (params.args.data != undefined) {
+  //         params.args.data['deleted'] = true;
+  //       } else {
+  //         params.args['data'] = { deleted: true, deletedAt: new Date() };
+  //       }
+  //     }
+  //   }
+  //   return next(params);
+  // }
 
   async cleanDatabase() {
     if (process.env.NODE_ENV === 'production') return;
