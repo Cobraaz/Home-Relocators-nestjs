@@ -5,7 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AtStrategy } from './strategies/at.strategy';
 import { RtStrategy } from './strategies/rt.strategy';
 import { UsersModule } from '../users/users.module';
-import { MailModule } from 'src/mail/mail.module';
+import { MailModule } from 'src/services/mail/mail.module';
 
 @Module({
   imports: [JwtModule.register({}), UsersModule, MailModule],

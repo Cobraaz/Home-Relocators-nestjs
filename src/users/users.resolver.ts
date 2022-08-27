@@ -10,6 +10,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { CacheControl } from 'nestjs-gql-cache-control';
 import { FindOneUserInput } from './dto/findOne-user.input';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
+import { GetCurrentUserUniqueID } from 'src/common/decorators/get-current-user-id.decorator';
 
 @Roles([Role.ADMIN])
 @UseInterceptors(UserInterceptor)
@@ -29,7 +30,7 @@ export class UsersResolver {
     return this.usersService.findOne(findOneUserInput);
   }
 
-  @Roles([Role.CUSTOMER, Role.SELLER])
+  @Roles([Role.CUSTOMER, Role.MOVER])
   @Mutation(() => User)
   updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
@@ -40,9 +41,9 @@ export class UsersResolver {
 
   @Mutation(() => User)
   removeUser(
-    @GetCurrentUser('role') role: string,
+    @GetCurrentUserUniqueID() uniqueID: string,
     @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
   ) {
-    return this.usersService.remove(findOneUserInput);
+    return this.usersService.remove(uniqueID, findOneUserInput);
   }
 }

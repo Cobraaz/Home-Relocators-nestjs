@@ -12,7 +12,7 @@ datasource db {
 
 enum Role {
   CUSTOMER
-  SELLER
+  MOVER
   ADMIN
 }
 

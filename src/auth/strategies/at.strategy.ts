@@ -27,7 +27,7 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     const contextId = ContextIdFactory.getByRequest(request);
     const authService = await this.moduleRef.resolve(AuthService, contextId);
-    await authService.validToken(decryptedEmail, accessToken);
+    await authService.validToken(sub, accessToken);
 
     return {
       email: decryptedEmail,

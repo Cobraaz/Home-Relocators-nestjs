@@ -1,25 +1,28 @@
-import { CacheService } from './../cache/cache.service';
+import { ONE_HOUR, SEVEN_DAYS, FIFTEEN_MIN } from './../common/constants';
+import { CacheService } from '../config/cache/cache.service';
 import { LoginUserInput } from './dto/login-user.input';
 import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import argon from 'argon2';
 import CryptoJS from 'crypto-js';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../config/prisma/prisma.service';
 import { TokensResponse } from './entities/token.entity-response';
 import { JwtPayload } from './types/jwtPayload.type';
 import { SignUpUserInput } from './dto/signup-user.input';
 import { customError } from '../utils/CustomError';
-import { Role, User } from '@prisma/client';
+import { EmailActivation, Role, User } from '@prisma/client';
 import { EmailActivationResponse } from './entities/emailActivation-response.entity';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
-import { MailService } from 'src/mail/mail.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { EmailActivationInput } from './dto/emailActivation.input';
 import { ResetPasswordInput } from './dto/resetPassword.input';
+import { selectUser } from 'src/common/helpers';
 
 @Injectable()
 export class AuthService {
@@ -30,17 +33,6 @@ export class AuthService {
     private mailService: MailService,
     private cache: CacheService,
   ) {}
-
-  selectUser = {
-    id: true,
-    uniqueID: true,
-    name: true,
-    email: true,
-    role: true,
-    avatar: true,
-    createdAt: true,
-    updatedAt: true,
-  };
 
   async signupLocal(
     signUpUserInput: SignUpUserInput,
@@ -74,7 +66,7 @@ export class AuthService {
 
     const activationToken = await argon.hash(activation_token);
 
-    await this.prisma.emailActivation.create({
+    const emailActivationData = await this.prisma.emailActivation.create({
       data: {
         name,
         email,
@@ -82,6 +74,8 @@ export class AuthService {
         activationToken,
       },
     });
+
+    this.cache.set(`emailActivate_${email}`, emailActivationData, FIFTEEN_MIN);
 
     this.mailService.sendEmailConfirmation(signUpUserInput, activation_token);
 
@@ -107,12 +101,19 @@ export class AuthService {
         verifyActivationToken.email,
         this.config.get<string>('CRYPTO_KEY'),
       ).toString(CryptoJS.enc.Utf8);
-
-      const emailValidationDetail = await this.prisma.emailActivation.delete({
-        where: {
-          email: decryptedEmail,
-        },
-      });
+      let emailValidationDetail: Partial<EmailActivation> = {};
+      const cacheEmailActivationData = await this.cache.get(
+        `emailActivate_${decryptedEmail}`,
+      );
+      if (cacheEmailActivationData) {
+        emailValidationDetail = cacheEmailActivationData as EmailActivation;
+      } else {
+        emailValidationDetail = await this.prisma.emailActivation.delete({
+          where: {
+            email: decryptedEmail,
+          },
+        });
+      }
 
       const { name, email, activationToken, password } = emailValidationDetail;
 
@@ -132,11 +133,7 @@ export class AuthService {
             email,
             password,
           },
-          select: {
-            uniqueID: true,
-            email: true,
-            role: true,
-          },
+          select: selectUser,
         })
         .catch((error) => {
           if (error instanceof PrismaClientKnownRequestError) {
@@ -146,6 +143,8 @@ export class AuthService {
           }
           throw error;
         });
+
+      this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR);
 
       const { access_token, refresh_token } = await this.getTokensResponse(
         user.uniqueID,
@@ -167,14 +166,7 @@ export class AuthService {
   }
 
   async signinLocal(loginUserInput: LoginUserInput) {
-    let user: Partial<User> = {};
-    const cacheUser = await this.cache.get(
-      `user_email_${loginUserInput.email}`,
-    );
-    if (cacheUser && Object.keys(cacheUser).length) {
-      user = cacheUser as User;
-    }
-    user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         email: loginUserInput.email,
       },
@@ -199,7 +191,6 @@ export class AuthService {
       user.password,
       loginUserInput.password,
     );
-
     if (!passwordMatches) {
       customError([
         {
@@ -209,18 +200,23 @@ export class AuthService {
       ]);
     }
 
-    const { access_token, refresh_token } = await this.getTokensResponse(
-      user.uniqueID,
-      user.email,
-      user.role,
-    );
-    await this.updateHash(user.uniqueID, access_token, refresh_token);
-    return {
-      access_token,
-      refresh_token,
-      uniqueID: user.uniqueID,
-      msg: 'Login Success!',
-    };
+    try {
+      const { access_token, refresh_token } = await this.getTokensResponse(
+        user.uniqueID,
+        user.email,
+        user.role,
+      );
+      await this.updateHash(user.uniqueID, access_token, refresh_token);
+      return {
+        access_token,
+        refresh_token,
+        uniqueID: user.uniqueID,
+        msg: 'Login Success!',
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Something went wrong.');
+    }
   }
 
   async logout(uniqueID: string): Promise<boolean> {
@@ -233,21 +229,34 @@ export class AuthService {
         hashedAt: null,
       },
     });
+    this.cache.del(`hashedAT_${uniqueID}`);
+    this.cache.del(`hashedRT_${uniqueID}`);
     return true;
   }
 
   async refreshTokens(uniqueID: string, rt: string): Promise<TokensResponse> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        uniqueID,
-      },
-      select: {
-        email: true,
-        uniqueID: true,
-        hashedRt: true,
-        role: true,
-      },
-    });
+    let user: Partial<User> = {};
+    const cacheToken = await this.cache.get(`hashedRT_${uniqueID}`);
+    const cacheUser = (await this.cache.get(`user_${uniqueID}`)) as User;
+
+    if (cacheToken && Object.keys(cacheToken).length && cacheUser.email) {
+      user = {
+        ...cacheUser,
+        hashedRt: cacheToken,
+      };
+    } else {
+      user = await this.prisma.user.findUnique({
+        where: {
+          uniqueID,
+        },
+        select: selectUser,
+      });
+
+      this.cache.set(`hashedRT_${uniqueID}`, user.hashedRt, SEVEN_DAYS);
+      this.cache.set(`hashedAT_${uniqueID}`, user.hashedAt, ONE_HOUR);
+      this.cache.set(`user_${uniqueID}`, user, ONE_HOUR);
+    }
+
     if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
 
     const rtMatches = await argon.verify(user.hashedRt, rt);
@@ -268,63 +277,72 @@ export class AuthService {
   }
 
   async forgetPassword(email: string) {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: {
-        email,
-      },
-      select: {
-        name: true,
-        email: true,
-      },
-    });
-    const resetPasswordToken = await this.getActivationToken(user.email);
-    this.mailService.sendResetPasswordConfirmation(user, resetPasswordToken);
+    const user = await this.prisma.user
+      .findFirstOrThrow({
+        where: {
+          email,
+        },
+        select: {
+          name: true,
+          uniqueID: true,
+          email: true,
+        },
+      })
+      .catch((error) => {
+        console.log(error.code);
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('User not found');
+          }
+        }
+        throw error;
+      });
 
+    const resetPasswordToken = await this.getResetingToken(user.uniqueID);
+    this.mailService.sendResetPasswordConfirmation(user, resetPasswordToken);
     return {
       msg: 'Reset the password, please check your email.',
     };
   }
 
   async resetPassword(resetPasswordInput: ResetPasswordInput) {
-    const { resetPassword_token, password } = resetPasswordInput;
+    const { resetPassword_token } = resetPasswordInput;
+    let { password } = resetPasswordInput;
+
+    const resetPasswordToken: { sub: string } = await this.jwtService
+      .verifyAsync(resetPassword_token, {
+        secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
+      })
+      .catch(() => {
+        throw new ForbiddenException('Token Expired');
+      });
+
+    if (!resetPasswordToken && !resetPasswordToken.sub) {
+      throw new ForbiddenException('Token Expired');
+    }
+    const { sub: uniqueID } = resetPasswordToken;
+    password = await argon.hash(password);
+    const user = await this.prisma.user
+      .update({
+        where: {
+          uniqueID,
+        },
+        data: {
+          password,
+        },
+        select: selectUser,
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new ForbiddenException('Credentials incorrect');
+          }
+        }
+        throw error;
+      });
 
     try {
-      const resetPasswordToken: { email: string } =
-        await this.jwtService.verifyAsync(resetPassword_token, {
-          secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
-        });
-
-      if (!resetPasswordToken && !resetPasswordToken.email) {
-        throw new ForbiddenException('Token Expired');
-      }
-
-      const decryptedEmail = CryptoJS.AES.decrypt(
-        resetPasswordToken.email,
-        this.config.get<string>('CRYPTO_KEY'),
-      ).toString(CryptoJS.enc.Utf8);
-
-      const user = await this.prisma.user
-        .update({
-          where: {
-            email: decryptedEmail,
-          },
-          data: {
-            password,
-          },
-          select: {
-            email: true,
-            uniqueID: true,
-            role: true,
-          },
-        })
-        .catch((error) => {
-          if (error instanceof PrismaClientKnownRequestError) {
-            if (error.code === 'P2002') {
-              throw new ForbiddenException('Credentials incorrect');
-            }
-          }
-          throw error;
-        });
+      this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR);
 
       const { access_token, refresh_token } = await this.getTokensResponse(
         user.uniqueID,
@@ -338,25 +356,36 @@ export class AuthService {
         access_token,
         refresh_token,
         uniqueID: user.uniqueID,
-        msg: 'Account has been activated!',
+        msg: 'Password Reset!',
       };
     } catch (error) {
       throw new InternalServerErrorException('Something went wrong');
     }
   }
 
-  async validToken(email: string, at: string) {
+  async validToken(uniqueID: string, at: string) {
     try {
-      const { hashedAt } = await this.prisma.user.findUnique({
-        where: {
-          email,
-        },
-        select: {
-          hashedAt: true,
-        },
-      });
-      const atMatches = await argon.verify(hashedAt, at);
-      if (!atMatches) {
+      let hashedAt = '';
+      const cacheToken = await this.cache.get(`hashedAT_${uniqueID}`);
+      if (cacheToken && Object.keys(cacheToken).length) {
+        hashedAt = cacheToken;
+      } else {
+        const user = await this.prisma.user.findUnique({
+          where: {
+            uniqueID,
+          },
+          select: {
+            hashedAt: true,
+          },
+        });
+        hashedAt = user.hashedAt;
+      }
+      if (hashedAt) {
+        const atMatches = await argon.verify(hashedAt, at);
+        if (!atMatches) {
+          throw new ForbiddenException('Access Denied');
+        }
+      } else {
         throw new ForbiddenException('Access Denied');
       }
     } catch (error) {
@@ -372,17 +401,22 @@ export class AuthService {
     try {
       const hashedRt = await argon.hash(rt);
       const hashedAt = await argon.hash(at);
-      await this.prisma.user.update({
+      const data = {
+        hashedRt,
+        hashedAt,
+      };
+      const user = await this.prisma.user.update({
         where: {
           uniqueID,
         },
-        data: {
-          hashedRt,
-          hashedAt,
-        },
-        select: { id: true },
+        data,
+        select: { ...selectUser, hashedRt: true, hashedAt: true },
       });
+
+      this.cache.set(`hashedAT_${uniqueID}`, user.hashedAt, ONE_HOUR);
+      this.cache.set(`hashedRT_${uniqueID}`, user.hashedRt, SEVEN_DAYS);
     } catch (error) {
+      console.error(error);
       throw new InternalServerErrorException('Something went wrong');
     }
   }
@@ -425,9 +459,20 @@ export class AuthService {
       email,
       this.config.get<string>('CRYPTO_KEY'),
     ).toString();
-
     const jwtPayload = {
       email: encryptedEmail,
+    };
+
+    const activation_token = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
+      expiresIn: this.config.get<string>('ACTIVATION_TOKEN_EXPIRES'),
+    });
+
+    return activation_token;
+  }
+  private async getResetingToken(uniqueID: string): Promise<string> {
+    const jwtPayload = {
+      sub: uniqueID,
     };
 
     const activation_token = await this.jwtService.signAsync(jwtPayload, {

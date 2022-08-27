@@ -11,9 +11,7 @@ type EmailActivationResponse {
 }
 
 input FindOneUserInput {
-  email: String
-  id: Int
-  uniqueID: String
+  uniqueID: String!
 }
 
 type ForgetPasswordResponse {
@@ -31,7 +29,7 @@ type Mutation {
   logout: Boolean!
   refreshTokens: TokensResponse!
   removeUser(findOneUserInput: FindOneUserInput!): User!
-  resetPassword(email: String!): ForgetPasswordResponse!
+  resetPassword(resetPasswordInput: ResetPasswordInput!): ForgetPasswordResponse!
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
   signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
   updateUser(updateUserInput: UpdateUserInput!): User!
@@ -40,6 +38,12 @@ type Mutation {
 type Query {
   user(findOneUserInput: FindOneUserInput!): User
   users: [User!]
+}
+
+input ResetPasswordInput {
+  password: String!
+  passwordConfirm: String!
+  resetPassword_token: String!
 }
 
 input SignUpUserInput {
@@ -57,11 +61,10 @@ type TokensResponse {
 
 input UpdateUserInput {
   email: String
-  id: Int
   name: String
   password: String
   passwordConfirm: String
-  uniqueID: String
+  uniqueID: String!
 }
 
 type User {

@@ -1,3 +1,4 @@
+import { ResetPasswordInput } from './dto/resetPassword.input';
 import { RTInterceptor } from './interceptor/refresh-token.interceptor';
 import { UseGuards, UseInterceptors } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import { EmailActivationResponse } from './entities/emailActivation-response.ent
 import { EmailActivationInput } from './dto/emailActivation.input';
 import { CacheControl } from 'nestjs-gql-cache-control';
 import { ForgetPasswordResponse } from './entities/forgetPassword-response.entity';
+import { RTClearInterceptor } from './interceptor/refresh-token-clear.interceptor';
 
 @Resolver(() => TokensResponse)
 export class AuthResolver {
@@ -34,6 +36,7 @@ export class AuthResolver {
   @CacheControl({ maxAge: 20 })
   async user(@Parent() tokens: TokensResponse) {
     const { uniqueID } = tokens;
+
     return plainToInstance(User, this.usersService.findOne({ uniqueID }), {
       excludeExtraneousValues: true,
     });
@@ -65,14 +68,15 @@ export class AuthResolver {
     return this.authService.signinLocal(loginUserInput);
   }
 
+  @UseInterceptors(RTClearInterceptor)
   @Mutation(() => Boolean)
   logout(@GetCurrentUserUniqueID() uniqueID: string): Promise<boolean> {
     return this.authService.logout(uniqueID);
   }
 
-  @Public()
   @UseGuards(RtGuard)
   @Mutation(() => TokensResponse)
+  @Public()
   refreshTokens(
     @GetCurrentUserUniqueID() uniqueID: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
@@ -80,8 +84,8 @@ export class AuthResolver {
     return this.authService.refreshTokens(uniqueID, refreshToken);
   }
 
-  @Public()
   @Mutation(() => ForgetPasswordResponse)
+  @Public()
   forgetPassword(
     @Args('email') email: string,
   ): Promise<ForgetPasswordResponse> {
@@ -90,7 +94,9 @@ export class AuthResolver {
 
   @Public()
   @Mutation(() => ForgetPasswordResponse)
-  resetPassword(@Args('email') email: string): Promise<ForgetPasswordResponse> {
-    return this.authService.forgetPassword(email);
+  resetPassword(
+    @Args('resetPasswordInput') resetPasswordInput: ResetPasswordInput,
+  ): Promise<ForgetPasswordResponse> {
+    return this.authService.resetPassword(resetPasswordInput);
   }
 }

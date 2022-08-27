@@ -3,7 +3,7 @@ import { Expose, Transform } from 'class-transformer';
 
 enum Role {
   CUSTOMER = 'CUSTOMER',
-  SELLER = 'SELLER',
+  MOVER = 'MOVER',
   ADMIN = 'ADMIN',
 }
 

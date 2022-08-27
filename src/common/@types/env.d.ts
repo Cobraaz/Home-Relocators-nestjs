@@ -20,4 +20,5 @@ declare global {
   }
 }
 
-export {}
+// eslint-disable-next-line prettier/prettier
+export {};
