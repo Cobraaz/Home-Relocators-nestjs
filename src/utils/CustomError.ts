@@ -20,7 +20,7 @@ export function CustomError(
   );
 
   if (ErrorTypes instanceof BadRequestException) {
-    return new BadRequestException(
+    throw new BadRequestException(
       {
         errors: formattedErrors,
         statusCode: 400,
@@ -28,10 +28,13 @@ export function CustomError(
       'Server Error',
     );
   }
-  throw new ErrorTypes('Server Error', {
-    errors: formattedErrors,
-    statusCode: 400,
-  });
+  throw new BadRequestException(
+    {
+      errors: formattedErrors,
+      statusCode: 400,
+    },
+    'Server Error',
+  );
 }
 
 export const customError = (
