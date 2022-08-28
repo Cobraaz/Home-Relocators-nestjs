@@ -9,7 +9,7 @@ import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { ApolloServerPluginCacheControl } from 'apollo-server-core/dist/plugin/cacheControl';
 
 import { UsersModule } from './users/users.module';
-import { PrismaModule } from './config/prisma/prisma.module';
+import { PrismaModule } from './config/database/prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { AtGuard } from './common/guards/at.guard';
 import { RolesGuard } from './common/guards/role.guard';

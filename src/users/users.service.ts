@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../config/prisma/prisma.service';
+import { PrismaService } from '../config/database/prisma/prisma.service';
 import { UpdateUserInput } from './dto/update-user.input';
 import { Role } from '@prisma/client';
 import { FindOneUserInput } from './dto/findOne-user.input';
@@ -67,6 +67,7 @@ export class UsersService {
     if (loggedInUserUniqueID === uniqueID) {
       throw new ForbiddenException('you cannot delete yourself');
     }
+    await this.findOne({ uniqueID });
     try {
       if (uniqueID) {
         this.cache.del(`user_${uniqueID}`);

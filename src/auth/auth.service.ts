@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import argon from 'argon2';
 import CryptoJS from 'crypto-js';
-import { PrismaService } from '../config/prisma/prisma.service';
+import { PrismaService } from '../config/database/prisma/prisma.service';
 import { TokensResponse } from './entities/token.entity-response';
 import { JwtPayload } from './types/jwtPayload.type';
 import { SignUpUserInput } from './dto/signup-user.input';
@@ -42,7 +42,7 @@ export class AuthService {
     const { name, email } = signUpUserInput;
     let { password } = signUpUserInput;
     const findEmail = await this.prisma.user.findFirst({
-      where: { email },
+      where: { email, deleted: false },
       select: {
         email: true,
       },
@@ -241,9 +241,10 @@ export class AuthService {
         hashedRt: cacheToken,
       };
     } else {
-      user = await this.prisma.user.findUnique({
+      user = await this.prisma.user.findFirst({
         where: {
           uniqueID,
+          deleted: false,
         },
         select: selectUser,
       });
@@ -277,6 +278,7 @@ export class AuthService {
       .findFirstOrThrow({
         where: {
           email,
+          deleted: false,
         },
         select: {
           name: true,
@@ -317,6 +319,7 @@ export class AuthService {
       throw new ForbiddenException('Token Expired');
     }
     const { sub: uniqueID } = resetPasswordToken;
+    await this.users.findOne({ uniqueID });
     password = await argon.hash(password);
     const user = await this.prisma.user
       .update({
