@@ -11,9 +11,7 @@ interface UserEmailContext {
 export class MailService {
   constructor(private mailerService: MailerService) {}
 
-  async sendEmailConfirmation(user: UserEmailContext, token: string) {
-    const url = `example.com/auth/confirm?token=${token}`;
-
+  async sendEmailConfirmation(user: UserEmailContext, otp: string) {
     const info = await this.mailerService.sendMail({
       to: user.email,
       // from: '"Support Team" <support@example.com>', // override default from
@@ -23,7 +21,7 @@ export class MailService {
         // ✏️ filling curly brackets with content
         name: user.name,
         title: 'PcHub',
-        url,
+        otp,
       },
     });
 
@@ -31,9 +29,7 @@ export class MailService {
     console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
   }
 
-  async sendResetPasswordConfirmation(user: UserEmailContext, token: string) {
-    const url = `example.com/auth/confirm?token=${token}`;
-
+  async sendResetPasswordConfirmation(user: UserEmailContext, otp: string) {
     const info = await this.mailerService.sendMail({
       to: user.email,
       // from: '"Support Team" <support@example.com>', // override default from
@@ -42,7 +38,7 @@ export class MailService {
       context: {
         name: user.name,
         title: 'PcHub',
-        url,
+        otp,
       },
     });
 
