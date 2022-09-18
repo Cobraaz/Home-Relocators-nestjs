@@ -24,6 +24,8 @@ import { MailService } from 'src/services/mail/mail.service';
 import { EmailActivationInput } from './dto/emailActivation.input';
 import { ResetPasswordInput } from './dto/resetPassword.input';
 import { selectUser } from 'src/common/helpers';
+import otpGenerator from 'otp-generator';
+import { otpExpirationTime } from 'src/common/helpers/helperFunctions';
 
 @Injectable()
 export class AuthService {
@@ -58,7 +60,8 @@ export class AuthService {
     }
     password = await argon.hash(password);
 
-    const activation_token = await this.getActivationToken(email);
+    const generatedActivationOtp = await this.getActivationOtp();
+    const expirationAt = otpExpirationTime(10);
 
     await this.prisma.emailActivation.deleteMany({
       where: {
@@ -66,56 +69,52 @@ export class AuthService {
       },
     });
 
-    const activationToken = await argon.hash(activation_token);
+    const activationOtp = await argon.hash(generatedActivationOtp);
 
     await this.prisma.emailActivation.create({
       data: {
         name,
         email,
         password,
-        activationToken,
+        activationOtp,
+        expirationAt,
       },
     });
 
-    this.mailService.sendEmailConfirmation(signUpUserInput, activation_token);
+    this.mailService.sendEmailConfirmation(
+      signUpUserInput,
+      generatedActivationOtp,
+    );
 
     return {
       msg: 'Register Success! Please activate your email to start.',
     };
   }
 
-  async activateAccount(token: EmailActivationInput) {
-    const { activation_token } = token;
-    console.log(activation_token);
+  async activateAccount(emailActivationInput: EmailActivationInput) {
+    console.log(emailActivationInput);
     try {
-      const verifyActivationToken: { email: string } =
-        await this.jwtService.verifyAsync(activation_token, {
-          secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
-        });
-
-      if (!verifyActivationToken && !verifyActivationToken.email) {
-        throw new ForbiddenException('Token Expired');
-      }
-
-      const decryptedEmail = CryptoJS.AES.decrypt(
-        verifyActivationToken.email,
-        this.config.get<string>('CRYPTO_KEY'),
-      ).toString(CryptoJS.enc.Utf8);
-
-      const emailValidationDetail = await this.prisma.emailActivation.delete({
+      const findEmailActivation = await this.prisma.emailActivation.delete({
         where: {
-          email: decryptedEmail,
+          email: emailActivationInput.email,
         },
       });
 
-      const { name, email, activationToken, password } = emailValidationDetail;
+      if (
+        !findEmailActivation ||
+        new Date() > new Date(findEmailActivation.expirationAt)
+      ) {
+        throw new ForbiddenException('OTP Expired');
+      }
 
-      const verifyTokenWithDB = await argon.verify(
-        activationToken,
-        activation_token,
+      const { name, email, activationOtp, password } = findEmailActivation;
+
+      const verifyOtp = await argon.verify(
+        activationOtp,
+        emailActivationInput.activation_otp,
       );
 
-      if (!verifyTokenWithDB) {
+      if (!verifyOtp) {
         throw new ForbiddenException('Access Denied');
       }
 
@@ -296,29 +295,62 @@ export class AuthService {
         throw error;
       });
 
-    const resetPasswordToken = await this.getResetingToken(user.uniqueID);
-    this.mailService.sendResetPasswordConfirmation(user, resetPasswordToken);
+    await this.prisma.forgetPassword.deleteMany({
+      where: {
+        userEmail: user.email,
+      },
+    });
+
+    const resetPasswordOtp = await this.getResetingOtp();
+    const resetingOtp = await argon.hash(resetPasswordOtp);
+    const expirationAt = otpExpirationTime(10);
+    await this.prisma.forgetPassword.create({
+      data: {
+        userEmail: user.email,
+        resetingOtp,
+        expirationAt,
+      },
+    });
+
+    this.mailService.sendResetPasswordConfirmation(user, resetPasswordOtp);
     return {
       msg: 'Reset the password, please check your email.',
     };
   }
 
   async resetPassword(resetPasswordInput: ResetPasswordInput) {
-    const { resetPassword_token } = resetPasswordInput;
+    const findEmailReseting = await this.prisma.forgetPassword.delete({
+      where: {
+        userEmail: resetPasswordInput.email,
+      },
+      select: {
+        resetingOtp: true,
+        expirationAt: true,
+        user: {
+          select: { uniqueID: true },
+        },
+      },
+    });
+
+    if (
+      !findEmailReseting ||
+      new Date() > new Date(findEmailReseting.expirationAt)
+    ) {
+      throw new ForbiddenException('OTP Expired');
+    }
+
     let { password } = resetPasswordInput;
 
-    const resetPasswordToken: { sub: string } = await this.jwtService
-      .verifyAsync(resetPassword_token, {
-        secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
-      })
-      .catch(() => {
-        throw new ForbiddenException('Token Expired');
-      });
+    const verifyOtp = await argon.verify(
+      findEmailReseting.resetingOtp,
+      resetPasswordInput.activation_otp,
+    );
 
-    if (!resetPasswordToken && !resetPasswordToken.sub) {
-      throw new ForbiddenException('Token Expired');
+    if (!verifyOtp) {
+      throw new ForbiddenException('Access Denied');
     }
-    const { sub: uniqueID } = resetPasswordToken;
+
+    const { uniqueID } = findEmailReseting.user;
     await this.users.findOne({ uniqueID });
     password = await argon.hash(password);
     const user = await this.prisma.user
@@ -465,32 +497,23 @@ export class AuthService {
     };
   }
 
-  private async getActivationToken(email: string): Promise<string> {
-    const encryptedEmail = CryptoJS.AES.encrypt(
-      email,
-      this.config.get<string>('CRYPTO_KEY'),
-    ).toString();
-    const jwtPayload = {
-      email: encryptedEmail,
-    };
+  private async getActivationOtp(): Promise<string> {
+    const otp = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    }) as string;
 
-    const activation_token = await this.jwtService.signAsync(jwtPayload, {
-      secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
-      expiresIn: this.config.get<string>('ACTIVATION_TOKEN_EXPIRES'),
-    });
-
-    return activation_token;
+    return otp;
   }
-  private async getResetingToken(uniqueID: string): Promise<string> {
-    const jwtPayload = {
-      sub: uniqueID,
-    };
 
-    const activation_token = await this.jwtService.signAsync(jwtPayload, {
-      secret: this.config.get<string>('ACTIVATION_TOKEN_SECRET'),
-      expiresIn: this.config.get<string>('ACTIVATION_TOKEN_EXPIRES'),
-    });
+  private async getResetingOtp(): Promise<string> {
+    const otp = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    }) as string;
 
-    return activation_token;
+    return otp;
   }
 }

@@ -1,9 +1,15 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 @InputType()
 export class EmailActivationInput {
   @Field(() => String)
+  @IsNotEmpty()
   @IsString()
-  activation_token: string;
+  @IsEmail()
+  email: string;
+
+  @Field(() => String)
+  @IsString()
+  activation_otp: string;
 }

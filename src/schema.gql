@@ -3,7 +3,8 @@
 # ------------------------------------------------------
 
 input EmailActivationInput {
-  activation_token: String!
+  activation_otp: String!
+  email: String!
 }
 
 type EmailActivationResponse {
@@ -24,12 +25,12 @@ input LoginUserInput {
 }
 
 type Mutation {
-  activateAccount(token: EmailActivationInput!): TokensResponse!
+  activateAccount(emailActivationInput: EmailActivationInput!): TokensResponse!
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
   removeUser(findOneUserInput: FindOneUserInput!): User!
-  resetPassword(resetPasswordInput: ResetPasswordInput!): ForgetPasswordResponse!
+  resetPassword(resetPasswordInput: ResetPasswordInput!): TokensResponse!
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
   signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
   updateUser(updateUserInput: UpdateUserInput!): User!
@@ -41,9 +42,10 @@ type Query {
 }
 
 input ResetPasswordInput {
+  activation_otp: String!
+  email: String!
   password: String!
   passwordConfirm: String!
-  resetPassword_token: String!
 }
 
 input SignUpUserInput {

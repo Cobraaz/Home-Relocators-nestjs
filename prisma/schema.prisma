@@ -17,30 +17,43 @@ enum Role {
 }
 
 model User {
-  id        Int      @id @default(autoincrement()) 
-  uniqueID  String   @unique @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(CUSTOMER)
-  avatar    String   @default("https://res.cloudinary.com/cobraaz/image/upload/v1595762337/gez4i626tlesoe3plwn7.jpg")
-  hashedAt  String?
-  hashedRt  String?
-  deleted   Boolean  @default(false)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  deletedAt DateTime? @db.Timestamptz(3)
+  id             Int             @id @default(autoincrement())
+  uniqueID       String          @unique @default(uuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           Role            @default(CUSTOMER)
+  avatar         String          @default("https://res.cloudinary.com/cobraaz/image/upload/v1595762337/gez4i626tlesoe3plwn7.jpg")
+  hashedAt       String?
+  hashedRt       String?
+  deleted        Boolean         @default(false)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?       @db.Timestamptz(3)
+  ForgetPassword ForgetPassword?
 
   @@map("user")
 }
 
 model EmailActivation {
-  name            String
-  email           String   @id @unique
-  password        String
-  activationToken String
-  createdAt       DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  name          String
+  email         String   @id @unique
+  password      String
+  activationOtp String
+  expirationAt  DateTime
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("emailActivation")
+}
+
+model ForgetPassword {
+  userEmail    String   @unique
+  resetingOtp  String
+  expirationAt DateTime
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  user         User     @relation(fields: [userEmail], references: [email])
+
+  @@map("forgetPassword")
 }

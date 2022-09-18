@@ -54,10 +54,10 @@ export class AuthResolver {
   @Public()
   @Mutation(() => TokensResponse)
   activateAccount(
-    @Args('token') token: EmailActivationInput,
+    @Args('emailActivationInput') emailActivationInput: EmailActivationInput,
   ): Promise<TokensResponse> {
     console.log('first first');
-    return this.authService.activateAccount(token);
+    return this.authService.activateAccount(emailActivationInput);
   }
 
   @UseInterceptors(RTInterceptor)
@@ -94,7 +94,7 @@ export class AuthResolver {
   }
 
   @Public()
-  @Mutation(() => ForgetPasswordResponse)
+  @Mutation(() => TokensResponse)
   resetPassword(
     @Args('resetPasswordInput') resetPasswordInput: ResetPasswordInput,
   ): Promise<ForgetPasswordResponse> {

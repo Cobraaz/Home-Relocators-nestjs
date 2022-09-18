@@ -8,17 +8,16 @@ declare global {
       AT_EXPIRES: string;
       RT_SECRET: string;
       RT_EXPIRES: string;
-      ACTIVATION_TOKEN_SECRET: string;
-      ACTIVATION_TOKEN_EXPIRES: string;
       CRYPTO_KEY: string;
       MAIL_HOST: string;
       MAIL_PORT: string;
       MAIL_USER: string;
       MAIL_PASSWORD: string;
       MAIL_FROM: string;
+      REDIS_HOST: string;
+      REDIS_PORT: string;
     }
   }
 }
 
-// eslint-disable-next-line prettier/prettier
-export {};
+export {}

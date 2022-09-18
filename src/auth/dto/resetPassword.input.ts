@@ -1,12 +1,25 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Match } from '../decorators/match.decorator';
 
 @InputType()
 export class ResetPasswordInput {
   @Field(() => String)
+  @IsNotEmpty()
   @IsString()
-  resetPassword_token: string;
+  @IsEmail()
+  email: string;
+
+  @Field(() => String)
+  @IsString()
+  activation_otp: string;
 
   @Field(() => String)
   @IsString()
