@@ -23,7 +23,8 @@ import { MailModule } from './services/mail/mail.module';
       driver: ApolloDriver,
       sortSchema: true,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      playground: process.env.NODE_ENV === 'development',
+      // playground: process.env.NODE_ENV === 'development',
+      introspection: process.env.NODE_ENV !== 'production',
       formatError: (err: GraphQLError) => {
         // if (err.originalError instanceof ArgumentValidationError) {
         // const errorMessage = err.extensions?.exception.validationErrors;
