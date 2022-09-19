@@ -11,6 +11,7 @@ import { CacheControl } from 'nestjs-gql-cache-control';
 import { FindOneUserInput } from './dto/findOne-user.input';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
 import { GetCurrentUserUniqueID } from 'src/common/decorators/get-current-user-id.decorator';
+import { UpdateUserPasswordInput } from './dto/update-user-password.input';
 
 @Roles([Role.ADMIN])
 @UseInterceptors(UserInterceptor)
@@ -37,6 +38,16 @@ export class UsersResolver {
     @GetCurrentUser() user: JwtPayload,
   ) {
     return this.usersService.update(updateUserInput, user);
+  }
+
+  @Roles([Role.CUSTOMER, Role.MOVER])
+  @Mutation(() => User)
+  updateUserPassword(
+    @Args('updateUserPasswordInput')
+    updateUserPasswordInput: UpdateUserPasswordInput,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.usersService.updatePassword(updateUserPasswordInput, user);
   }
 
   @Mutation(() => User)

@@ -26,6 +26,7 @@ import { MailModule } from './services/mail/mail.module';
       // playground: process.env.NODE_ENV === 'development',
       playground: true,
       introspection: true,
+      cache: 'bounded',
       formatError: (err: GraphQLError) => {
         // if (err.originalError instanceof ArgumentValidationError) {
         // const errorMessage = err.extensions?.exception.validationErrors;

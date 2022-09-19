@@ -34,6 +34,7 @@ type Mutation {
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
   signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
   updateUser(updateUserInput: UpdateUserInput!): User!
+  updateUserPassword(updateUserPasswordInput: UpdateUserPasswordInput!): User!
 }
 
 type Query {
@@ -62,11 +63,14 @@ type TokensResponse {
 }
 
 input UpdateUserInput {
-  email: String
   name: String
-  password: String
-  passwordConfirm: String
   uniqueID: String!
+}
+
+input UpdateUserPasswordInput {
+  currentPassword: String!
+  newPassword: String!
+  passwordConfirm: String!
 }
 
 type User {

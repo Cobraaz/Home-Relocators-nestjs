@@ -6,14 +6,18 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import argon from 'argon2';
+
 import { PrismaService } from '../config/database/prisma/prisma.service';
 import { UpdateUserInput } from './dto/update-user.input';
-import { Role } from '@prisma/client';
 import { FindOneUserInput } from './dto/findOne-user.input';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { CacheService } from '../config/cache/cache.service';
 import { User } from './entities/user.entity';
 import { selectUser } from 'src/common/helpers';
+import { UpdateUserPasswordInput } from './dto/update-user-password.input';
+import { customError } from 'src/utils/CustomError';
 
 @Injectable()
 export class UsersService {
@@ -89,7 +93,7 @@ export class UsersService {
   }
 
   async update(updateUserInput: UpdateUserInput, user: JwtPayload) {
-    const { uniqueID, name, password } = updateUserInput;
+    const { uniqueID, name } = updateUserInput;
     if (user.role === Role.CUSTOMER || user.role === Role.MOVER) {
       let isAllowed = false;
       if (user.sub === uniqueID) {
@@ -107,7 +111,71 @@ export class UsersService {
         },
         data: {
           ...(name && { name }),
-          ...(password && { password }),
+        },
+        select: selectUser,
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('User not found');
+          }
+        }
+        throw error;
+      });
+
+    try {
+      this.cache.set(`user_${updatedUser.uniqueID}`, updatedUser, ONE_HOUR);
+      return updatedUser;
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Something went wrong.');
+    }
+  }
+
+  async updatePassword(
+    updateUserPasswordInput: UpdateUserPasswordInput,
+    user: JwtPayload,
+  ) {
+    const { sub: uniqueID } = user;
+    const { currentPassword, newPassword } = updateUserPasswordInput;
+
+    const findUser = await this.prisma.user
+      .findFirstOrThrow({
+        where: {
+          uniqueID,
+          deleted: false,
+        },
+        select: {
+          password: true,
+        },
+      })
+      .catch(() => {
+        throw new NotFoundException('User not found');
+      });
+
+    const checkPassword = await argon.verify(
+      findUser.password,
+      currentPassword,
+    );
+
+    if (!checkPassword) {
+      customError([
+        {
+          property: 'currentPassword',
+          constraints: 'Password Incorrect',
+        },
+      ]);
+    }
+
+    const password = await argon.hash(newPassword);
+
+    const updatedUser = await this.prisma.user
+      .update({
+        where: {
+          uniqueID,
+        },
+        data: {
+          password,
         },
         select: selectUser,
       })
