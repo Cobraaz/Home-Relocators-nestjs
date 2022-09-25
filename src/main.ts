@@ -14,7 +14,12 @@ const formatValidationError = (errors: ValidationError[]) => {
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: true,
+      credentials: true,
+    },
+  });
   const configService = app.get(ConfigService);
   const PORT = configService.get<number>('PORT');
 
