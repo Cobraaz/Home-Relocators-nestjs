@@ -93,49 +93,81 @@ export class AuthService {
 
   async activateAccount(emailActivationInput: EmailActivationInput) {
     console.log(emailActivationInput);
-    try {
-      const findEmailActivation = await this.prisma.emailActivation.delete({
+
+    const findEmailActivation = await this.prisma.emailActivation
+      .findUniqueOrThrow({
         where: {
           email: emailActivationInput.email,
         },
+      })
+      .catch((error) => {
+        console.error(error);
+        throw new InternalServerErrorException();
       });
 
-      if (
-        !findEmailActivation ||
-        new Date() > new Date(findEmailActivation.expirationAt)
-      ) {
-        throw new ForbiddenException('OTP Expired');
-      }
+    if (
+      !findEmailActivation ||
+      new Date() > new Date(findEmailActivation.expirationAt)
+    ) {
+      customError([
+        {
+          property: 'activationOtp',
+          constraints: 'OTP Expired',
+        },
+      ]);
+    }
 
-      const { name, email, activationOtp, password } = findEmailActivation;
+    const { name, email, activationOtp, password } = findEmailActivation;
 
-      const verifyOtp = await argon.verify(
-        activationOtp,
-        emailActivationInput.activation_otp,
-      );
+    const verifyOtp = await argon.verify(
+      activationOtp,
+      emailActivationInput.activationOtp,
+    );
 
-      if (!verifyOtp) {
-        throw new ForbiddenException('Access Denied');
-      }
+    if (!verifyOtp) {
+      customError([
+        {
+          property: 'activationOtp',
+          constraints: 'Incorrect OTP',
+        },
+      ]);
+    }
 
-      const user = await this.prisma.user
-        .create({
-          data: {
-            name,
-            email,
-            password,
-          },
-          select: selectUser,
-        })
-        .catch((error) => {
-          if (error instanceof PrismaClientKnownRequestError) {
-            if (error.code === 'P2002') {
-              throw new ForbiddenException('Credentials incorrect');
-            }
+    await this.prisma.emailActivation
+      .delete({
+        where: {
+          email: emailActivationInput.email,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new ForbiddenException('Access Denied');
           }
-          throw error;
-        });
+        }
+        console.error(error);
+        throw new InternalServerErrorException();
+      });
 
+    const user = await this.prisma.user
+      .create({
+        data: {
+          name,
+          email,
+          password,
+        },
+        select: selectUser,
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new ForbiddenException('Credentials incorrect');
+          }
+        }
+        throw new InternalServerErrorException();
+      });
+
+    try {
       this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR);
 
       const { access_token, refresh_token } = await this.getTokensResponse(
@@ -175,7 +207,7 @@ export class AuthService {
       customError([
         {
           property: 'email',
-          constraints: 'Email not found',
+          constraints: "Email doesn't exists",
         },
       ]);
     }
@@ -273,27 +305,26 @@ export class AuthService {
   }
 
   async forgetPassword(email: string) {
-    const user = await this.prisma.user
-      .findFirstOrThrow({
-        where: {
-          email,
-          deleted: false,
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        deleted: false,
+      },
+      select: {
+        name: true,
+        uniqueID: true,
+        email: true,
+      },
+    });
+
+    if (!user) {
+      customError([
+        {
+          property: 'email',
+          constraints: "Email doesn't exists",
         },
-        select: {
-          name: true,
-          uniqueID: true,
-          email: true,
-        },
-      })
-      .catch((error) => {
-        console.log(error.code);
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            throw new NotFoundException('User not found');
-          }
-        }
-        throw error;
-      });
+      ]);
+    }
 
     await this.prisma.forgetPassword.deleteMany({
       where: {
@@ -319,40 +350,67 @@ export class AuthService {
   }
 
   async resetPassword(resetPasswordInput: ResetPasswordInput) {
-    const findEmailReseting = await this.prisma.forgetPassword.delete({
-      where: {
-        userEmail: resetPasswordInput.email,
-      },
-      select: {
-        resetingOtp: true,
-        expirationAt: true,
-        user: {
-          select: { uniqueID: true },
+    const findEmailReseting = await this.prisma.forgetPassword
+      .findUniqueOrThrow({
+        where: {
+          userEmail: resetPasswordInput.email,
         },
-      },
-    });
+        select: {
+          resetingOtp: true,
+          expirationAt: true,
+          user: {
+            select: { uniqueID: true },
+          },
+        },
+      })
+      .catch((error) => {
+        console.error(error);
+        throw new InternalServerErrorException();
+      });
 
     if (
       !findEmailReseting ||
       new Date() > new Date(findEmailReseting.expirationAt)
     ) {
-      throw new ForbiddenException('OTP Expired');
+      customError([
+        {
+          property: 'resetingOtp',
+          constraints: 'OTP Expired',
+        },
+      ]);
     }
 
     let { password } = resetPasswordInput;
 
     const verifyOtp = await argon.verify(
       findEmailReseting.resetingOtp,
-      resetPasswordInput.activation_otp,
+      resetPasswordInput.resetingOtp,
     );
 
     if (!verifyOtp) {
-      throw new ForbiddenException('Access Denied');
+      customError([
+        {
+          property: 'resetingOtp',
+          constraints: 'Incorrect OTP',
+        },
+      ]);
     }
 
     const { uniqueID } = findEmailReseting.user;
     await this.users.findOne({ uniqueID });
     password = await argon.hash(password);
+
+    await this.prisma.forgetPassword
+      .delete({
+        where: {
+          userEmail: resetPasswordInput.email,
+        },
+      })
+      .catch((error) => {
+        console.error(error);
+        throw new InternalServerErrorException();
+      });
+
     const user = await this.prisma.user
       .update({
         where: {

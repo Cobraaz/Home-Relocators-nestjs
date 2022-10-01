@@ -3,7 +3,7 @@
 # ------------------------------------------------------
 
 input EmailActivationInput {
-  activation_otp: String!
+  activationOtp: String!
   email: String!
 }
 
@@ -43,10 +43,10 @@ type Query {
 }
 
 input ResetPasswordInput {
-  activation_otp: String!
   email: String!
   password: String!
   passwordConfirm: String!
+  resetingOtp: String!
 }
 
 input SignUpUserInput {

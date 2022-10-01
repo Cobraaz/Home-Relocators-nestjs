@@ -11,5 +11,5 @@ export class EmailActivationInput {
 
   @Field(() => String)
   @IsString()
-  activation_otp: string;
+  activationOtp: string;
 }

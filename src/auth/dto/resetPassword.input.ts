@@ -19,7 +19,7 @@ export class ResetPasswordInput {
 
   @Field(() => String)
   @IsString()
-  activation_otp: string;
+  resetingOtp: string;
 
   @Field(() => String)
   @IsString()
