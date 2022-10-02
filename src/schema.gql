@@ -26,6 +26,7 @@ input LoginUserInput {
 
 type Mutation {
   activateAccount(emailActivationInput: EmailActivationInput!): TokensResponse!
+  adminUpdateUser(findOneUserInput: FindOneUserInput!, updateUserInput: UpdateUserInput!): User!
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
@@ -38,8 +39,9 @@ type Mutation {
 }
 
 type Query {
+  adminFindOneUser(findOneUserInput: FindOneUserInput!): User!
   hello: String!
-  user(findOneUserInput: FindOneUserInput!): User
+  user: User
   users: [User!]
 }
 
@@ -64,7 +66,6 @@ type TokensResponse {
 }
 
 input UpdateUserInput {
-  id: String!
   name: String
 }
 

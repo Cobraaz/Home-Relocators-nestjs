@@ -6,7 +6,6 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import argon from 'argon2';
 
@@ -42,7 +41,7 @@ export class UsersService {
     return users;
   }
 
-  async findOne({ id }: FindOneUserInput): Promise<User> {
+  async findOne(id: string): Promise<User> {
     const cacheUser = await this.cache.get(`user_${id}`);
     if (cacheUser && Object.keys(cacheUser).length) {
       return cacheUser;
@@ -71,7 +70,7 @@ export class UsersService {
     if (loggedInUserId === id) {
       throw new ForbiddenException('you cannot delete yourself');
     }
-    await this.findOne({ id });
+    await this.findOne(id);
     try {
       if (id) {
         this.cache.del(`user_${id}`);
@@ -92,17 +91,10 @@ export class UsersService {
     }
   }
 
-  async update(updateUserInput: UpdateUserInput, user: JwtPayload) {
-    const { id, name } = updateUserInput;
-    if (user.role === Role.CUSTOMER || user.role === Role.MOVER) {
-      let isAllowed = false;
-      if (user.sub === id) {
-        isAllowed = true;
-      }
-      if (!isAllowed) throw new ForbiddenException('Access Denied');
-    }
+  async update(updateUserInput: UpdateUserInput, id: string) {
+    const { name } = updateUserInput;
 
-    await this.findOne({ id });
+    await this.findOne(id);
 
     const updatedUser = await this.prisma.user
       .update({

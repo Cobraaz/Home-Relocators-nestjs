@@ -38,7 +38,7 @@ export class AuthResolver {
   async user(@Parent() tokens: TokensResponse) {
     const { id } = tokens;
 
-    return plainToInstance(User, this.usersService.findOne({ id }), {
+    return plainToInstance(User, this.usersService.findOne(id), {
       excludeExtraneousValues: true,
     });
   }
@@ -57,7 +57,6 @@ export class AuthResolver {
   activateAccount(
     @Args('emailActivationInput') emailActivationInput: EmailActivationInput,
   ): Promise<TokensResponse> {
-    console.log('first first');
     return this.authService.activateAccount(emailActivationInput);
   }
 

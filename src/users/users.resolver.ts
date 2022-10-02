@@ -20,24 +20,41 @@ export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query(() => [User], { name: 'users', nullable: true })
-  // @CacheControl({ maxAge: 20 })
+  @CacheControl({ maxAge: 10 })
   findAll() {
     return this.usersService.findAll();
   }
 
+  @Roles([Role.CUSTOMER, Role.MOVER])
   @Query(() => User, { name: 'user', nullable: true })
   @CacheControl({ maxAge: 10 })
-  findOne(@Args('findOneUserInput') findOneUserInput: FindOneUserInput) {
-    return this.usersService.findOne(findOneUserInput);
+  findOne(@GetCurrentUserId() id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Query(() => User)
+  @CacheControl({ maxAge: 10 })
+  adminFindOneUser(
+    @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
+  ) {
+    return this.usersService.findOne(findOneUserInput.id);
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
   @Mutation(() => User)
   updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
-    @GetCurrentUser() user: JwtPayload,
+    @GetCurrentUserId() id: string,
   ) {
-    return this.usersService.update(updateUserInput, user);
+    return this.usersService.update(updateUserInput, id);
+  }
+
+  @Mutation(() => User)
+  adminUpdateUser(
+    @Args('updateUserInput') updateUserInput: UpdateUserInput,
+    @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
+  ) {
+    return this.usersService.update(updateUserInput, findOneUserInput.id);
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])

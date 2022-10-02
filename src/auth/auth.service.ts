@@ -92,8 +92,6 @@ export class AuthService {
   }
 
   async activateAccount(emailActivationInput: EmailActivationInput) {
-    console.log(emailActivationInput);
-
     const findEmailActivation = await this.prisma.emailActivation
       .findUniqueOrThrow({
         where: {
@@ -397,7 +395,7 @@ export class AuthService {
     }
 
     const { id } = findEmailReseting.user;
-    await this.users.findOne({ id });
+    await this.users.findOne(id);
     password = await argon.hash(password);
 
     await this.prisma.forgetPassword
@@ -493,7 +491,7 @@ export class AuthService {
   }
 
   private async updateHash(id: string, at: string, rt: string): Promise<void> {
-    await this.users.findOne({ id });
+    await this.users.findOne(id);
     try {
       const hashedRt = await argon.hash(rt);
       const hashedAt = await argon.hash(at);
