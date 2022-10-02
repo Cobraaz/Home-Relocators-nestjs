@@ -4,13 +4,14 @@ import { UseGuards, UseInterceptors } from '@nestjs/common';
 import {
   Args,
   Mutation,
+  Query,
   Parent,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import { plainToInstance } from 'class-transformer';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
-import { GetCurrentUserUniqueID } from '../common/decorators/get-current-user-id.decorator';
+import { GetCurrentUserId } from '../common/decorators/get-current-user-id.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { LoginUserInput } from './dto/login-user.input';
@@ -35,9 +36,9 @@ export class AuthResolver {
   @ResolveField(() => User)
   @CacheControl({ maxAge: 20 })
   async user(@Parent() tokens: TokensResponse) {
-    const { uniqueID } = tokens;
+    const { id } = tokens;
 
-    return plainToInstance(User, this.usersService.findOne({ uniqueID }), {
+    return plainToInstance(User, this.usersService.findOne({ id }), {
       excludeExtraneousValues: true,
     });
   }
@@ -71,18 +72,18 @@ export class AuthResolver {
 
   @UseInterceptors(RTClearInterceptor)
   @Mutation(() => Boolean)
-  logout(@GetCurrentUserUniqueID() uniqueID: string): Promise<boolean> {
-    return this.authService.logout(uniqueID);
+  logout(@GetCurrentUserId() id: string): Promise<boolean> {
+    return this.authService.logout(id);
   }
 
   @UseGuards(RtGuard)
   @Mutation(() => TokensResponse)
   @Public()
   refreshTokens(
-    @GetCurrentUserUniqueID() uniqueID: string,
+    @GetCurrentUserId() id: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
   ): Promise<TokensResponse> {
-    return this.authService.refreshTokens(uniqueID, refreshToken);
+    return this.authService.refreshTokens(id, refreshToken);
   }
 
   @Mutation(() => ForgetPasswordResponse)
@@ -99,5 +100,11 @@ export class AuthResolver {
     @Args('resetPasswordInput') resetPasswordInput: ResetPasswordInput,
   ): Promise<ForgetPasswordResponse> {
     return this.authService.resetPassword(resetPasswordInput);
+  }
+
+  @Public()
+  @Query(() => String)
+  hello(): string {
+    return 'Hello Anuj';
   }
 }

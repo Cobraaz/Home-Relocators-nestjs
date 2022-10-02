@@ -5,5 +5,5 @@ import { IsUUID } from 'class-validator';
 export class FindOneUserInput {
   @Field(() => String)
   @IsUUID('all')
-  uniqueID: string;
+  id: string;
 }

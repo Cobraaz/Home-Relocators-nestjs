@@ -168,20 +168,20 @@ export class AuthService {
       });
 
     try {
-      this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR);
+      this.cache.set(`user_${user.id}`, user, ONE_HOUR);
 
       const { access_token, refresh_token } = await this.getTokensResponse(
-        user.uniqueID,
+        user.id,
         user.email,
         user.role,
       );
 
-      await this.updateHash(user.uniqueID, access_token, refresh_token);
+      await this.updateHash(user.id, access_token, refresh_token);
 
       return {
         access_token,
         refresh_token,
-        uniqueID: user.uniqueID,
+        id: user.id,
         msg: 'Account has been activated!',
       };
     } catch (error) {
@@ -198,7 +198,7 @@ export class AuthService {
       select: {
         email: true,
         password: true,
-        uniqueID: true,
+        id: true,
         role: true,
       },
     });
@@ -227,15 +227,15 @@ export class AuthService {
 
     try {
       const { access_token, refresh_token } = await this.getTokensResponse(
-        user.uniqueID,
+        user.id,
         user.email,
         user.role,
       );
-      await this.updateHash(user.uniqueID, access_token, refresh_token);
+      await this.updateHash(user.id, access_token, refresh_token);
       return {
         access_token,
         refresh_token,
-        uniqueID: user.uniqueID,
+        id: user.id,
         msg: 'Login Success!',
       };
     } catch (error) {
@@ -244,27 +244,27 @@ export class AuthService {
     }
   }
 
-  async logout(uniqueID: string): Promise<boolean> {
+  async logout(id: string): Promise<boolean> {
     await this.prisma.user.updateMany({
       where: {
-        uniqueID,
+        id,
       },
       data: {
         hashedRt: null,
         hashedAt: null,
       },
     });
-    this.cache.del(`hashedAT_${uniqueID}`);
-    this.cache.del(`hashedRT_${uniqueID}`);
-    this.cache.del(`user_${uniqueID}`);
+    this.cache.del(`hashedAT_${id}`);
+    this.cache.del(`hashedRT_${id}`);
+    this.cache.del(`user_${id}`);
 
     return true;
   }
 
-  async refreshTokens(uniqueID: string, rt: string): Promise<TokensResponse> {
+  async refreshTokens(id: string, rt: string): Promise<TokensResponse> {
     let user: Partial<User> = {};
-    const cacheToken = await this.cache.get(`hashedRT_${uniqueID}`);
-    const cacheUser = (await this.cache.get(`user_${uniqueID}`)) as User;
+    const cacheToken = await this.cache.get(`hashedRT_${id}`);
+    const cacheUser = (await this.cache.get(`user_${id}`)) as User;
 
     if (cacheToken && Object.keys(cacheToken).length && cacheUser.email) {
       user = {
@@ -274,15 +274,15 @@ export class AuthService {
     } else {
       user = await this.prisma.user.findFirst({
         where: {
-          uniqueID,
+          id,
           deleted: false,
         },
         select: selectUser,
       });
 
-      this.cache.set(`hashedRT_${uniqueID}`, user.hashedRt, SEVEN_DAYS);
-      this.cache.set(`hashedAT_${uniqueID}`, user.hashedAt, ONE_HOUR);
-      this.cache.set(`user_${uniqueID}`, user, ONE_HOUR);
+      this.cache.set(`hashedRT_${id}`, user.hashedRt, SEVEN_DAYS);
+      this.cache.set(`hashedAT_${id}`, user.hashedAt, ONE_HOUR);
+      this.cache.set(`user_${id}`, user, ONE_HOUR);
     }
 
     if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
@@ -291,16 +291,16 @@ export class AuthService {
     if (!rtMatches) throw new ForbiddenException('Access Denied');
 
     const { access_token, refresh_token } = await this.getTokensResponse(
-      user.uniqueID,
+      user.id,
       user.email,
       user.role,
     );
-    await this.updateHash(user.uniqueID, access_token, refresh_token);
+    await this.updateHash(user.id, access_token, refresh_token);
 
     return {
       access_token,
       refresh_token,
-      uniqueID: user.uniqueID,
+      id: user.id,
     };
   }
 
@@ -312,7 +312,7 @@ export class AuthService {
       },
       select: {
         name: true,
-        uniqueID: true,
+        id: true,
         email: true,
       },
     });
@@ -359,7 +359,7 @@ export class AuthService {
           resetingOtp: true,
           expirationAt: true,
           user: {
-            select: { uniqueID: true },
+            select: { id: true },
           },
         },
       })
@@ -396,8 +396,8 @@ export class AuthService {
       ]);
     }
 
-    const { uniqueID } = findEmailReseting.user;
-    await this.users.findOne({ uniqueID });
+    const { id } = findEmailReseting.user;
+    await this.users.findOne({ id });
     password = await argon.hash(password);
 
     await this.prisma.forgetPassword
@@ -414,7 +414,7 @@ export class AuthService {
     const user = await this.prisma.user
       .update({
         where: {
-          uniqueID,
+          id,
         },
         data: {
           password,
@@ -431,20 +431,20 @@ export class AuthService {
       });
 
     try {
-      this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR);
+      this.cache.set(`user_${user.id}`, user, ONE_HOUR);
 
       const { access_token, refresh_token } = await this.getTokensResponse(
-        user.uniqueID,
+        user.id,
         user.email,
         user.role,
       );
 
-      await this.updateHash(user.uniqueID, access_token, refresh_token);
+      await this.updateHash(user.id, access_token, refresh_token);
 
       return {
         access_token,
         refresh_token,
-        uniqueID: user.uniqueID,
+        id: user.id,
         msg: 'Password Reset!',
       };
     } catch (error) {
@@ -452,16 +452,16 @@ export class AuthService {
     }
   }
 
-  async validToken(uniqueID: string, at: string) {
+  async validToken(id: string, at: string) {
     let hashedAt = '';
-    const cacheToken = await this.cache.get(`hashedAT_${uniqueID}`);
+    const cacheToken = await this.cache.get(`hashedAT_${id}`);
     if (cacheToken && Object.keys(cacheToken).length) {
       hashedAt = cacheToken;
     } else {
       const user = await this.prisma.user
         .findFirstOrThrow({
           where: {
-            uniqueID,
+            id,
             deleted: false,
           },
           select: {
@@ -492,12 +492,8 @@ export class AuthService {
     }
   }
 
-  private async updateHash(
-    uniqueID: string,
-    at: string,
-    rt: string,
-  ): Promise<void> {
-    await this.users.findOne({ uniqueID });
+  private async updateHash(id: string, at: string, rt: string): Promise<void> {
+    await this.users.findOne({ id });
     try {
       const hashedRt = await argon.hash(rt);
       const hashedAt = await argon.hash(at);
@@ -508,14 +504,14 @@ export class AuthService {
 
       const user = await this.prisma.user.update({
         where: {
-          uniqueID,
+          id,
         },
         data,
         select: { ...selectUser, hashedRt: true, hashedAt: true },
       });
 
-      this.cache.set(`hashedAT_${uniqueID}`, user.hashedAt, ONE_HOUR);
-      this.cache.set(`hashedRT_${uniqueID}`, user.hashedRt, SEVEN_DAYS);
+      this.cache.set(`hashedAT_${id}`, user.hashedAt, ONE_HOUR);
+      this.cache.set(`hashedRT_${id}`, user.hashedRt, SEVEN_DAYS);
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException('Something went wrong');
@@ -523,7 +519,7 @@ export class AuthService {
   }
 
   private async getTokensResponse(
-    uniqueID: string,
+    id: string,
     email: string,
     role: Role,
   ): Promise<Pick<TokensResponse, 'access_token' | 'refresh_token'>> {
@@ -533,7 +529,7 @@ export class AuthService {
     ).toString();
 
     const jwtPayload: JwtPayload = {
-      sub: uniqueID,
+      sub: id,
       email: encryptedEmail,
       role,
     };

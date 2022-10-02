@@ -1,4 +1,4 @@
-import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, registerEnumType, ID, Int } from '@nestjs/graphql';
 import { Expose, Transform } from 'class-transformer';
 
 enum Role {
@@ -14,13 +14,13 @@ registerEnumType(Role, {
 
 @ObjectType()
 export class User {
+  @Field(() => ID)
+  @Expose()
+  id: string;
+
   @Field(() => Int)
   @Expose()
-  id: number;
-
-  @Field(() => String)
-  @Expose()
-  uniqueID: string;
+  index: number;
 
   @Field(() => String)
   @Expose()

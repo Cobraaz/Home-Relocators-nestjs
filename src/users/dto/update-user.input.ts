@@ -5,7 +5,7 @@ import { IsUUID } from 'class-validator';
 export class UpdateUserInput {
   @Field(() => String)
   @IsUUID('all')
-  uniqueID: string;
+  id: string;
 
   @Field(() => String, { nullable: true })
   name?: string;

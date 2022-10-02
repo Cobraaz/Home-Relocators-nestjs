@@ -13,6 +13,6 @@ export class TokensResponse {
   @Field(() => String, { nullable: true })
   msg?: string;
 
-  uniqueID: string;
+  id: string;
   refresh_token: string;
 }

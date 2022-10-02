@@ -36,21 +36,21 @@ export class UsersService {
     if (users.length) {
       this.cache.set('users', users, FIVE_MIN);
       users.forEach((user) =>
-        this.cache.set(`user_${user.uniqueID}`, user, ONE_HOUR),
+        this.cache.set(`user_${user.id}`, user, ONE_HOUR),
       );
     }
     return users;
   }
 
-  async findOne({ uniqueID }: FindOneUserInput): Promise<User> {
-    const cacheUser = await this.cache.get(`user_${uniqueID}`);
+  async findOne({ id }: FindOneUserInput): Promise<User> {
+    const cacheUser = await this.cache.get(`user_${id}`);
     if (cacheUser && Object.keys(cacheUser).length) {
       return cacheUser;
     }
     const user = await this.prisma.user
       .findFirstOrThrow({
         where: {
-          uniqueID,
+          id,
           deleted: false,
         },
         select: selectUser,
@@ -59,27 +59,27 @@ export class UsersService {
         throw new NotFoundException('User not found');
       });
     if (user) {
-      this.cache.set(`user_${uniqueID}`, user, ONE_HOUR);
+      this.cache.set(`user_${id}`, user, ONE_HOUR);
     }
     return user;
   }
 
   async remove(
-    loggedInUserUniqueID: string,
-    { uniqueID }: FindOneUserInput,
+    loggedInUserId: string,
+    { id }: FindOneUserInput,
   ): Promise<User> {
-    if (loggedInUserUniqueID === uniqueID) {
+    if (loggedInUserId === id) {
       throw new ForbiddenException('you cannot delete yourself');
     }
-    await this.findOne({ uniqueID });
+    await this.findOne({ id });
     try {
-      if (uniqueID) {
-        this.cache.del(`user_${uniqueID}`);
-        this.cache.del(`hashedAT_${uniqueID}`);
-        this.cache.del(`hashedRT_${uniqueID}`);
+      if (id) {
+        this.cache.del(`user_${id}`);
+        this.cache.del(`hashedAT_${id}`);
+        this.cache.del(`hashedRT_${id}`);
         return this.prisma.user.update({
           where: {
-            uniqueID,
+            id,
           },
           data: {
             deleted: true,
@@ -93,21 +93,21 @@ export class UsersService {
   }
 
   async update(updateUserInput: UpdateUserInput, user: JwtPayload) {
-    const { uniqueID, name } = updateUserInput;
+    const { id, name } = updateUserInput;
     if (user.role === Role.CUSTOMER || user.role === Role.MOVER) {
       let isAllowed = false;
-      if (user.sub === uniqueID) {
+      if (user.sub === id) {
         isAllowed = true;
       }
       if (!isAllowed) throw new ForbiddenException('Access Denied');
     }
 
-    await this.findOne({ uniqueID });
+    await this.findOne({ id });
 
     const updatedUser = await this.prisma.user
       .update({
         where: {
-          uniqueID,
+          id,
         },
         data: {
           ...(name && { name }),
@@ -124,7 +124,7 @@ export class UsersService {
       });
 
     try {
-      this.cache.set(`user_${updatedUser.uniqueID}`, updatedUser, ONE_HOUR);
+      this.cache.set(`user_${updatedUser.id}`, updatedUser, ONE_HOUR);
       return updatedUser;
     } catch (error) {
       console.log(error);
@@ -136,13 +136,13 @@ export class UsersService {
     updateUserPasswordInput: UpdateUserPasswordInput,
     user: JwtPayload,
   ) {
-    const { sub: uniqueID } = user;
+    const { sub: id } = user;
     const { currentPassword, newPassword } = updateUserPasswordInput;
 
     const findUser = await this.prisma.user
       .findFirstOrThrow({
         where: {
-          uniqueID,
+          id,
           deleted: false,
         },
         select: {
@@ -172,7 +172,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user
       .update({
         where: {
-          uniqueID,
+          id,
         },
         data: {
           password,
@@ -189,7 +189,7 @@ export class UsersService {
       });
 
     try {
-      this.cache.set(`user_${updatedUser.uniqueID}`, updatedUser, ONE_HOUR);
+      this.cache.set(`user_${updatedUser.id}`, updatedUser, ONE_HOUR);
       return updatedUser;
     } catch (error) {
       console.log(error);

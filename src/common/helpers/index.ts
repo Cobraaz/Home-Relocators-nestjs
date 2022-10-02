@@ -1,6 +1,6 @@
 export const selectUser = {
   id: true,
-  uniqueID: true,
+  index: true,
   name: true,
   email: true,
   role: true,

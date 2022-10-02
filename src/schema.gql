@@ -12,7 +12,7 @@ type EmailActivationResponse {
 }
 
 input FindOneUserInput {
-  uniqueID: String!
+  id: String!
 }
 
 type ForgetPasswordResponse {
@@ -38,6 +38,7 @@ type Mutation {
 }
 
 type Query {
+  hello: String!
   user(findOneUserInput: FindOneUserInput!): User
   users: [User!]
 }
@@ -63,8 +64,8 @@ type TokensResponse {
 }
 
 input UpdateUserInput {
+  id: String!
   name: String
-  uniqueID: String!
 }
 
 input UpdateUserPasswordInput {
@@ -77,9 +78,9 @@ type User {
   avatar: String!
   createdAt: String!
   email: String!
-  id: Int!
+  id: ID!
+  index: Int!
   name: String!
   role: String!
-  uniqueID: String!
   updatedAt: String!
 }
