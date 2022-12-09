@@ -66,6 +66,7 @@ type TokensResponse {
 }
 
 input UpdateUserInput {
+  avatar: String
   name: String
 }
 

@@ -92,7 +92,7 @@ export class UsersService {
   }
 
   async update(updateUserInput: UpdateUserInput, id: string) {
-    const { name } = updateUserInput;
+    const { name, avatar } = updateUserInput;
 
     await this.findOne(id);
 
@@ -103,6 +103,7 @@ export class UsersService {
         },
         data: {
           ...(name && { name }),
+          ...(avatar && { avatar }),
         },
         select: selectUser,
       })

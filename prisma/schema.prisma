@@ -23,7 +23,7 @@ model User {
   email          String          @unique
   password       String
   role           Role            @default(CUSTOMER)
-  avatar         String          @default("https://res.cloudinary.com/cobraaz/image/upload/v1595762337/gez4i626tlesoe3plwn7.jpg")
+  avatar         String          @default("")
   hashedAt       String?
   hashedRt       String?
   deleted        Boolean         @default(false)
