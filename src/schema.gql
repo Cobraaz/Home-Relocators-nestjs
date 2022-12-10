@@ -11,6 +11,17 @@ type EmailActivationResponse {
   msg: String!
 }
 
+input FindAllUsersInput {
+  role: String!
+  skip: Int!
+  take: Int!
+}
+
+type FindAllUsersResponse {
+  totalCount: Int!
+  users: [User!]
+}
+
 input FindOneUserInput {
   id: String!
 }
@@ -42,7 +53,7 @@ type Query {
   adminFindOneUser(findOneUserInput: FindOneUserInput!): User!
   hello: String!
   user: User
-  users: [User!]
+  users(findAllUsersInput: FindAllUsersInput!): FindAllUsersResponse!
 }
 
 input ResetPasswordInput {

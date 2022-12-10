@@ -17,28 +17,40 @@ import { User } from './entities/user.entity';
 import { selectUser } from 'src/common/helpers';
 import { UpdateUserPasswordInput } from './dto/update-user-password.input';
 import { customError } from 'src/utils/CustomError';
+import { FindAllUsersInput } from './dto/findAll-users.input';
+import { FindAllUsersResponse } from './entities/findAll-users-response.entity';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService, private cache: CacheService) {}
 
-  async findAll(): Promise<User[]> {
-    const cacheUsers = (await this.cache.get('users')) as User[];
-    if (cacheUsers) {
-      return cacheUsers;
-    }
-
+  async findAll(
+    findAllUsersInput: FindAllUsersInput,
+  ): Promise<FindAllUsersResponse> {
+    console.log('findAllUsersInput', findAllUsersInput);
     const users = await this.prisma.user.findMany({
-      where: { deleted: false },
+      skip: findAllUsersInput.skip,
+      take: findAllUsersInput.take,
+      where: {
+        deleted: false,
+        role: findAllUsersInput.role,
+      },
+      orderBy: [
+        {
+          index: 'asc',
+        },
+      ],
       select: selectUser,
     });
     if (users.length) {
-      this.cache.set('users', users, FIVE_MIN);
       users.forEach((user) =>
         this.cache.set(`user_${user.id}`, user, ONE_HOUR),
       );
     }
-    return users;
+
+    const totalCount = await this.prisma.user.count();
+
+    return { totalCount, users };
   }
 
   async findOne(id: string): Promise<User> {

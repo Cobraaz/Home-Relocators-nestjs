@@ -12,26 +12,29 @@ import { FindOneUserInput } from './dto/findOne-user.input';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
 import { GetCurrentUserId } from 'src/common/decorators/get-current-user-id.decorator';
 import { UpdateUserPasswordInput } from './dto/update-user-password.input';
+import { FindAllUsersInput } from './dto/findAll-users.input';
+import { FindAllUsersResponse } from './entities/findAll-users-response.entity';
 
 @Roles([Role.ADMIN])
-@UseInterceptors(UserInterceptor)
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Query(() => [User], { name: 'users', nullable: true })
+  @Query(() => FindAllUsersResponse, { name: 'users' })
   @CacheControl({ maxAge: 10 })
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Args('findAllUsersInput') findAllUsersInput: FindAllUsersInput) {
+    return this.usersService.findAll(findAllUsersInput);
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
+  @UseInterceptors(UserInterceptor)
   @Query(() => User, { name: 'user', nullable: true })
   @CacheControl({ maxAge: 10 })
   findOne(@GetCurrentUserId() id: string) {
     return this.usersService.findOne(id);
   }
 
+  @UseInterceptors(UserInterceptor)
   @Query(() => User)
   @CacheControl({ maxAge: 10 })
   adminFindOneUser(
@@ -41,6 +44,7 @@ export class UsersResolver {
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
+  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
@@ -49,6 +53,7 @@ export class UsersResolver {
     return this.usersService.update(updateUserInput, id);
   }
 
+  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   adminUpdateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
@@ -58,6 +63,7 @@ export class UsersResolver {
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
+  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   updateUserPassword(
     @Args('updateUserPasswordInput')
@@ -68,6 +74,7 @@ export class UsersResolver {
   }
 
   @Mutation(() => User)
+  @UseInterceptors(UserInterceptor)
   removeUser(
     @GetCurrentUserId() id: string,
     @Args('findOneUserInput') findOneUserInput: FindOneUserInput,

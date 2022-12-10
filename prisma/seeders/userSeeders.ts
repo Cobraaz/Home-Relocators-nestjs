@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import argon from 'argon2';
 
@@ -9,19 +9,19 @@ const userSeeders = async () => {
       name: 'Test Admin',
       email: 'testadmin@gmail.com',
       password: 'Anuj@1234',
-      role: 'ADMIN',
+      role: Role.ADMIN,
     },
     {
       name: 'Test Customer',
       email: 'testcustomer@gmail.com',
       password: 'Anuj@1234',
-      role: 'CUSTOMER',
+      role: Role.CUSTOMER,
     },
     {
       name: 'Test Mover',
       email: 'testmover@gmail.com',
       password: 'Anuj@1234',
-      role: 'MOVER',
+      role: Role.MOVER,
     },
   ];
 
@@ -35,12 +35,17 @@ const userSeeders = async () => {
     }),
   );
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 70; i++) {
     const password = await argon.hash(faker.internet.password());
+    const roles = Object.values(Role);
+    const randomIndex = Math.floor(Math.random() * roles.length);
+    const randomRole = roles[randomIndex];
+
     users.push({
       name: faker.name.fullName(),
       email: faker.internet.email(),
       password: password,
+      role: randomRole,
     });
   }
   return users;
