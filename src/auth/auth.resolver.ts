@@ -1,6 +1,5 @@
 import { ResetPasswordInput } from './dto/resetPassword.input';
-import { RTInterceptor } from './interceptor/refresh-token.interceptor';
-import { UseGuards, UseInterceptors } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -9,7 +8,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { plainToInstance } from 'class-transformer';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { GetCurrentUserId } from '../common/decorators/get-current-user-id.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -24,7 +22,6 @@ import { EmailActivationResponse } from './entities/emailActivation-response.ent
 import { EmailActivationInput } from './dto/emailActivation.input';
 import { CacheControl } from 'nestjs-gql-cache-control';
 import { ForgetPasswordResponse } from './entities/forgetPassword-response.entity';
-import { RTClearInterceptor } from './interceptor/refresh-token-clear.interceptor';
 
 @Resolver(() => TokensResponse)
 export class AuthResolver {
@@ -37,10 +34,7 @@ export class AuthResolver {
   @CacheControl({ maxAge: 20 })
   async user(@Parent() tokens: TokensResponse) {
     const { id } = tokens;
-
-    return plainToInstance(User, this.usersService.findOne(id), {
-      excludeExtraneousValues: true,
-    });
+    return this.usersService.findOne(id);
   }
 
   @Public()
@@ -51,7 +45,6 @@ export class AuthResolver {
     return this.authService.signupLocal(signUpUserInput);
   }
 
-  @UseInterceptors(RTInterceptor)
   @Public()
   @Mutation(() => TokensResponse)
   activateAccount(
@@ -60,7 +53,6 @@ export class AuthResolver {
     return this.authService.activateAccount(emailActivationInput);
   }
 
-  @UseInterceptors(RTInterceptor)
   @Public()
   @Mutation(() => TokensResponse)
   signinLocal(
@@ -69,7 +61,6 @@ export class AuthResolver {
     return this.authService.signinLocal(loginUserInput);
   }
 
-  @UseInterceptors(RTClearInterceptor)
   @Mutation(() => Boolean)
   logout(@GetCurrentUserId() id: string): Promise<boolean> {
     return this.authService.logout(id);
@@ -82,6 +73,7 @@ export class AuthResolver {
     @GetCurrentUserId() id: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
   ): Promise<TokensResponse> {
+    console.log('refreshToken', refreshToken);
     return this.authService.refreshTokens(id, refreshToken);
   }
 

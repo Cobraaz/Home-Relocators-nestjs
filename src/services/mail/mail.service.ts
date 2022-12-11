@@ -20,7 +20,7 @@ export class MailService {
       context: {
         // ✏️ filling curly brackets with content
         name: user.name,
-        title: 'PcHub',
+        title: 'Home Relocators',
         otp,
       },
     });
@@ -37,7 +37,7 @@ export class MailService {
       template: './resetPassword', // `.hbs` extension is appended automatically
       context: {
         name: user.name,
-        title: 'PcHub',
+        title: 'Home Relocators',
         otp,
       },
     });

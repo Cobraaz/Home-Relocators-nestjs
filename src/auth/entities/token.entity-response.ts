@@ -7,6 +7,9 @@ export class TokensResponse {
   @Field(() => String)
   access_token: string;
 
+  @Field(() => String)
+  refresh_token: string;
+
   @Field(() => User)
   user?: PrismaUser;
 
@@ -14,5 +17,4 @@ export class TokensResponse {
   msg?: string;
 
   id: string;
-  refresh_token: string;
 }

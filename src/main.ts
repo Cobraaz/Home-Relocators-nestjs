@@ -2,7 +2,6 @@ import { ValidationError } from 'class-validator';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import { AppModule } from './app.module';
 import { CustomError } from './utils/CustomError';
@@ -26,7 +25,6 @@ async function bootstrap() {
 
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
-  app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
       exceptionFactory: formatValidationError,

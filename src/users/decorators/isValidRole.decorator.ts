@@ -10,8 +10,11 @@ export function IsValidRole(validationOptions?: ValidationOptions) {
       constraints: [],
       validator: {
         validate(role: Role) {
-          const roles = Object.values(Role).map((ro) => ro.toLowerCase());
-          return roles.includes(role.toLowerCase());
+          if (role) {
+            const roles = Object.values(Role).map((ro) => ro.toLowerCase());
+            return roles.includes(role.toLowerCase());
+          }
+          return true;
         },
         defaultMessage() {
           return `Role must be valid`;

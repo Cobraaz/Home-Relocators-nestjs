@@ -1,7 +1,5 @@
 import { JwtPayload } from './../auth/types/jwtPayload.type';
-import { UseInterceptors } from '@nestjs/common';
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
-import { UserInterceptor } from './interceptor/user.interceptor';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Roles } from '../common/decorators/role.decorator';
@@ -14,6 +12,7 @@ import { GetCurrentUserId } from 'src/common/decorators/get-current-user-id.deco
 import { UpdateUserPasswordInput } from './dto/update-user-password.input';
 import { FindAllUsersInput } from './dto/findAll-users.input';
 import { FindAllUsersResponse } from './entities/findAll-users-response.entity';
+import { AdminUpdateUserInput } from './dto/adminUpdate-user.input';
 
 @Roles([Role.ADMIN])
 @Resolver(() => User)
@@ -27,14 +26,12 @@ export class UsersResolver {
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
-  @UseInterceptors(UserInterceptor)
   @Query(() => User, { name: 'user', nullable: true })
   @CacheControl({ maxAge: 10 })
   findOne(@GetCurrentUserId() id: string) {
     return this.usersService.findOne(id);
   }
 
-  @UseInterceptors(UserInterceptor)
   @Query(() => User)
   @CacheControl({ maxAge: 10 })
   adminFindOneUser(
@@ -44,7 +41,6 @@ export class UsersResolver {
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
-  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
@@ -53,17 +49,18 @@ export class UsersResolver {
     return this.usersService.update(updateUserInput, id);
   }
 
-  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   adminUpdateUser(
-    @Args('updateUserInput') updateUserInput: UpdateUserInput,
+    @Args('adminUpdateUserInput') adminUpdateUserInput: AdminUpdateUserInput,
     @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
   ) {
-    return this.usersService.update(updateUserInput, findOneUserInput.id);
+    return this.usersService.adminUpdate(
+      adminUpdateUserInput,
+      findOneUserInput.id,
+    );
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])
-  @UseInterceptors(UserInterceptor)
   @Mutation(() => User)
   updateUserPassword(
     @Args('updateUserPasswordInput')
@@ -74,7 +71,6 @@ export class UsersResolver {
   }
 
   @Mutation(() => User)
-  @UseInterceptors(UserInterceptor)
   removeUser(
     @GetCurrentUserId() id: string,
     @Args('findOneUserInput') findOneUserInput: FindOneUserInput,

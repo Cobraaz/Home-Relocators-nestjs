@@ -1,10 +1,13 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 import { Role } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsValidRole } from '../decorators/isValidRole.decorator';
 
 @InputType()
-export class FindAllUsersInput {
+export class AdminUpdateUserInput {
+  @Field(() => String, { nullable: true })
+  name?: string;
+
   @Field(() => String, { nullable: true })
   @IsValidRole()
   @Transform(({ value }: { value?: string }) => {
@@ -13,11 +16,5 @@ export class FindAllUsersInput {
   role?: Role;
 
   @Field(() => String, { nullable: true })
-  search?: string;
-
-  @Field(() => Int, { nullable: true })
-  skip?: number;
-
-  @Field(() => Int, { nullable: true })
-  take?: number;
+  avatar?: string;
 }

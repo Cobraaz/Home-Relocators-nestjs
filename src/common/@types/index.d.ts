@@ -5,10 +5,4 @@ declare global {
     req: express.Request;
     res: express.Response;
   }
-
-  interface Request {
-    cookies: {
-      __pchub_refresh_token__?: string;
-    };
-  }
 }

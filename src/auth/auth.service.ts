@@ -476,6 +476,7 @@ export class AuthService {
         });
       hashedAt = user.hashedAt;
     }
+    console.log('hashedAt', hashedAt);
     try {
       if (hashedAt) {
         const atMatches = await argon.verify(hashedAt, at);

@@ -46,6 +46,7 @@ const userSeeders = async () => {
       email: faker.internet.email(),
       password: password,
       role: randomRole,
+      avatar: faker.image.avatar(),
     });
   }
   return users;

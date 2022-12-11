@@ -1,4 +1,4 @@
-import { FIVE_MIN, ONE_HOUR } from './../common/constants';
+import { ONE_HOUR } from './../common/constants';
 import { JwtPayload } from './../auth/types/jwtPayload.type';
 import {
   ForbiddenException,
@@ -19,6 +19,8 @@ import { UpdateUserPasswordInput } from './dto/update-user-password.input';
 import { customError } from 'src/utils/CustomError';
 import { FindAllUsersInput } from './dto/findAll-users.input';
 import { FindAllUsersResponse } from './entities/findAll-users-response.entity';
+import { Prisma } from '@prisma/client';
+import { AdminUpdateUserInput } from './dto/adminUpdate-user.input';
 
 @Injectable()
 export class UsersService {
@@ -27,14 +29,34 @@ export class UsersService {
   async findAll(
     findAllUsersInput: FindAllUsersInput,
   ): Promise<FindAllUsersResponse> {
-    console.log('findAllUsersInput', findAllUsersInput);
+    const { role, search, skip, take } = findAllUsersInput;
+    const whereCondition: Prisma.UserWhereInput = {
+      deleted: false,
+      ...(role && { role }),
+      ...(search && {
+        OR: [
+          {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+            email: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      }),
+    };
+
     const users = await this.prisma.user.findMany({
-      skip: findAllUsersInput.skip,
-      take: findAllUsersInput.take,
-      where: {
-        deleted: false,
-        role: findAllUsersInput.role,
-      },
+      ...(skip > -1 &&
+        take > -1 && {
+          skip,
+          take,
+        }),
+
+      where: whereCondition,
       orderBy: [
         {
           index: 'asc',
@@ -48,7 +70,9 @@ export class UsersService {
       );
     }
 
-    const totalCount = await this.prisma.user.count();
+    const totalCount = await this.prisma.user.count({
+      where: whereCondition,
+    });
 
     return { totalCount, users };
   }
@@ -104,8 +128,6 @@ export class UsersService {
   }
 
   async update(updateUserInput: UpdateUserInput, id: string) {
-    const { name, avatar } = updateUserInput;
-
     await this.findOne(id);
 
     const updatedUser = await this.prisma.user
@@ -113,10 +135,36 @@ export class UsersService {
         where: {
           id,
         },
-        data: {
-          ...(name && { name }),
-          ...(avatar && { avatar }),
+        data: updateUserInput,
+        select: selectUser,
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('User not found');
+          }
+        }
+        throw error;
+      });
+
+    try {
+      this.cache.set(`user_${updatedUser.id}`, updatedUser, ONE_HOUR);
+      return updatedUser;
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Something went wrong.');
+    }
+  }
+
+  async adminUpdate(adminUpdateUserInput: AdminUpdateUserInput, id: string) {
+    await this.findOne(id);
+
+    const updatedUser = await this.prisma.user
+      .update({
+        where: {
+          id,
         },
+        data: adminUpdateUserInput,
         select: selectUser,
       })
       .catch((error) => {

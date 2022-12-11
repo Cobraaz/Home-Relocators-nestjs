@@ -2,6 +2,17 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AdminUpdateUserInput {
+  avatar: String
+  name: String
+  role: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 input EmailActivationInput {
   activationOtp: String!
   email: String!
@@ -12,9 +23,10 @@ type EmailActivationResponse {
 }
 
 input FindAllUsersInput {
-  role: String!
-  skip: Int!
-  take: Int!
+  role: String
+  search: String
+  skip: Int
+  take: Int
 }
 
 type FindAllUsersResponse {
@@ -37,7 +49,7 @@ input LoginUserInput {
 
 type Mutation {
   activateAccount(emailActivationInput: EmailActivationInput!): TokensResponse!
-  adminUpdateUser(findOneUserInput: FindOneUserInput!, updateUserInput: UpdateUserInput!): User!
+  adminUpdateUser(adminUpdateUserInput: AdminUpdateUserInput!, findOneUserInput: FindOneUserInput!): User!
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
@@ -73,6 +85,7 @@ input SignUpUserInput {
 type TokensResponse {
   access_token: String!
   msg: String
+  refresh_token: String!
   user: User!
 }
 
@@ -89,11 +102,11 @@ input UpdateUserPasswordInput {
 
 type User {
   avatar: String!
-  createdAt: String!
+  createdAt: DateTime!
   email: String!
   id: ID!
   index: Int!
   name: String!
   role: String!
-  updatedAt: String!
+  updatedAt: DateTime!
 }
