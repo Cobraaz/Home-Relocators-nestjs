@@ -31,6 +31,9 @@ export class User {
   @Field(() => String)
   avatar: string;
 
+  @Field(() => Boolean)
+  disable: boolean;
+
   @Field(() => Date)
   createdAt: Date;
 

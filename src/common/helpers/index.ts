@@ -5,6 +5,7 @@ export const selectUser = {
   email: true,
   role: true,
   avatar: true,
+  disable: true,
   createdAt: true,
   updatedAt: true,
 };

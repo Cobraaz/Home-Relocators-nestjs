@@ -264,7 +264,14 @@ export class AuthService {
     const cacheToken = await this.cache.get(`hashedRT_${id}`);
     const cacheUser = (await this.cache.get(`user_${id}`)) as User;
 
-    if (cacheToken && Object.keys(cacheToken).length && cacheUser.email) {
+    console.log('cacheUser', cacheUser);
+
+    if (
+      cacheToken &&
+      Object.keys(cacheToken).length &&
+      cacheUser &&
+      cacheUser?.email
+    ) {
       user = {
         ...cacheUser,
         hashedRt: cacheToken,
@@ -275,7 +282,7 @@ export class AuthService {
           id,
           deleted: false,
         },
-        select: selectUser,
+        select: { ...selectUser, hashedRt: true, hashedAt: true },
       });
 
       this.cache.set(`hashedRT_${id}`, user.hashedRt, SEVEN_DAYS);

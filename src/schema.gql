@@ -103,6 +103,7 @@ input UpdateUserPasswordInput {
 type User {
   avatar: String!
   createdAt: DateTime!
+  disable: Boolean!
   email: String!
   id: ID!
   index: Int!
