@@ -17,7 +17,7 @@ export class User {
   id: string;
 
   @Field(() => Int)
-  index: number;
+  sequenceNumber: number;
 
   @Field(() => String)
   name: string;
@@ -33,6 +33,12 @@ export class User {
 
   @Field(() => Boolean)
   disable: boolean;
+
+  @Field(() => Boolean)
+  deleted: boolean;
+
+  @Field(() => User, { nullable: true })
+  deletedBy: string;
 
   @Field(() => Date)
   createdAt: Date;

@@ -31,7 +31,6 @@ export class UsersService {
   ): Promise<FindAllUsersResponse> {
     const { role, search, skip, take } = findAllUsersInput;
     const whereCondition: Prisma.UserWhereInput = {
-      deleted: false,
       ...(role && { role }),
       ...(search && {
         OR: [
@@ -59,15 +58,17 @@ export class UsersService {
       where: whereCondition,
       orderBy: [
         {
-          index: 'asc',
+          sequenceNumber: 'asc',
         },
       ],
       select: selectUser,
     });
     if (users.length) {
-      users.forEach((user) =>
-        this.cache.set(`user_${user.id}`, user, ONE_HOUR),
-      );
+      users.forEach((user) => {
+        if (!user.deletedBy) {
+          this.cache.set(`user_${user.id}`, user, ONE_HOUR);
+        }
+      });
     }
 
     const totalCount = await this.prisma.user.count({
@@ -77,52 +78,65 @@ export class UsersService {
     return { totalCount, users };
   }
 
-  async findOne(id: string): Promise<User> {
+  // eslint-disable-next-line @typescript-eslint/no-inferrable-types
+  async findOne(id: string, adminFindUser: boolean = false): Promise<User> {
     const cacheUser = await this.cache.get(`user_${id}`);
-    if (cacheUser && Object.keys(cacheUser).length) {
+    if (cacheUser && Object.keys(cacheUser).length && !cacheUser.deletedBy) {
       return cacheUser;
     }
     const user = await this.prisma.user
       .findFirstOrThrow({
         where: {
           id,
-          deleted: false,
+          ...(!adminFindUser && { deleted: false }),
         },
         select: selectUser,
       })
       .catch(() => {
         throw new NotFoundException('User not found');
       });
-    if (user) {
+    if (user && !user.deletedBy) {
       this.cache.set(`user_${id}`, user, ONE_HOUR);
     }
     return user;
   }
 
-  async remove(
-    loggedInUserId: string,
-    { id }: FindOneUserInput,
-  ): Promise<User> {
-    if (loggedInUserId === id) {
-      throw new ForbiddenException('you cannot delete yourself');
-    }
+  async remove(id: string, loggedInUserId?: string): Promise<User> {
     await this.findOne(id);
     try {
       if (id) {
         this.cache.del(`user_${id}`);
         this.cache.del(`hashedAT_${id}`);
         this.cache.del(`hashedRT_${id}`);
-        return this.prisma.user.update({
+        const deletedUser = await this.prisma.user.update({
           where: {
             id,
           },
           data: {
             deleted: true,
+            deletedAt: new Date(),
+            deletedBy: loggedInUserId || id,
+            hashedAt: null,
+            hashedRt: null,
           },
-          select: selectUser,
+          select: {
+            id: true,
+            sequenceNumber: true,
+            name: true,
+            email: true,
+            role: true,
+            avatar: true,
+            disable: true,
+            deleted: true,
+            deletedBy: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
+        return deletedUser;
       }
     } catch (error) {
+      console.error(error);
       throw new InternalServerErrorException('Something went wrong.');
     }
   }

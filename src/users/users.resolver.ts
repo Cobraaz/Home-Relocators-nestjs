@@ -1,5 +1,12 @@
 import { JwtPayload } from './../auth/types/jwtPayload.type';
-import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Args,
+  Mutation,
+  Parent,
+  ResolveField,
+} from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Roles } from '../common/decorators/role.decorator';
@@ -18,6 +25,16 @@ import { AdminUpdateUserInput } from './dto/adminUpdate-user.input';
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
+
+  @ResolveField(() => User)
+  async deletedBy(@Parent() user: User) {
+    console.log('<<<<<<<<<<<-first->>>>>');
+    const { deletedBy } = user;
+    if (deletedBy) {
+      return this.usersService.findOne(deletedBy, true);
+    }
+    return null;
+  }
 
   @Query(() => FindAllUsersResponse, { name: 'users' })
   @CacheControl({ maxAge: 10 })
@@ -70,11 +87,17 @@ export class UsersResolver {
     return this.usersService.updatePassword(updateUserPasswordInput, user);
   }
 
+  @Roles([Role.CUSTOMER, Role.MOVER])
   @Mutation(() => User)
-  removeUser(
+  removeUser(@GetCurrentUserId() id: string) {
+    return this.usersService.remove(id);
+  }
+
+  @Mutation(() => User)
+  adminRemoveUser(
     @GetCurrentUserId() id: string,
     @Args('findOneUserInput') findOneUserInput: FindOneUserInput,
   ) {
-    return this.usersService.remove(id, findOneUserInput);
+    return this.usersService.remove(findOneUserInput.id, id);
   }
 }

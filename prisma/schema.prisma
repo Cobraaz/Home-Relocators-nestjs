@@ -17,20 +17,22 @@ enum Role {
 }
 
 model User {
-  id             String          @id @unique @default(uuid())
-  index          Int             @default(autoincrement())
+  id             String    @id @unique @default(uuid())
+  sequenceNumber Int       @default(autoincrement())
   name           String
-  email          String          @unique
+  email          String    @unique
   password       String
-  role           Role            @default(CUSTOMER)
-  avatar         String          @default("")
+  role           Role      @default(CUSTOMER)
+  avatar         String    @default("")
+  disable        Boolean   @default(false)
+  deleted        Boolean   @default(false)
+  deletedBy      String?   @db.Uuid
+  deletedAt      DateTime? @db.Timestamptz(3)
   hashedAt       String?
   hashedRt       String?
-  disable        Boolean         @default(false)
-  deleted        Boolean         @default(false)
-  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
-  deletedAt      DateTime?       @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
   ForgetPassword ForgetPassword?
 
   @@map("user")

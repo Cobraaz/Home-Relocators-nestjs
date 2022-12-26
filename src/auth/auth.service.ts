@@ -270,7 +270,8 @@ export class AuthService {
       cacheToken &&
       Object.keys(cacheToken).length &&
       cacheUser &&
-      cacheUser?.email
+      cacheUser?.email &&
+      !cacheUser.deletedBy
     ) {
       user = {
         ...cacheUser,
@@ -284,10 +285,15 @@ export class AuthService {
         },
         select: { ...selectUser, hashedRt: true, hashedAt: true },
       });
-
-      this.cache.set(`hashedRT_${id}`, user.hashedRt, SEVEN_DAYS);
-      this.cache.set(`hashedAT_${id}`, user.hashedAt, ONE_HOUR);
-      this.cache.set(`user_${id}`, user, ONE_HOUR);
+      if (user.hashedRt) {
+        this.cache.set(`hashedRT_${id}`, user.hashedRt, SEVEN_DAYS);
+      }
+      if (user.hashedAt) {
+        this.cache.set(`hashedAT_${id}`, user.hashedAt, ONE_HOUR);
+      }
+      if (user.id) {
+        this.cache.set(`user_${id}`, user, ONE_HOUR);
+      }
     }
 
     if (!user || !user.hashedRt)
@@ -504,6 +510,7 @@ export class AuthService {
       const data = {
         hashedRt,
         hashedAt,
+        disable: false,
       };
 
       const user = await this.prisma.user.update({

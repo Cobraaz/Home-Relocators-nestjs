@@ -50,11 +50,12 @@ input LoginUserInput {
 
 type Mutation {
   activateAccount(emailActivationInput: EmailActivationInput!): TokensResponse!
+  adminRemoveUser(findOneUserInput: FindOneUserInput!): User!
   adminUpdateUser(adminUpdateUserInput: AdminUpdateUserInput!, findOneUserInput: FindOneUserInput!): User!
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
-  removeUser(findOneUserInput: FindOneUserInput!): User!
+  removeUser: User!
   resetPassword(resetPasswordInput: ResetPasswordInput!): TokensResponse!
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
   signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
@@ -92,6 +93,7 @@ type TokensResponse {
 
 input UpdateUserInput {
   avatar: String
+  disable: Boolean
   name: String
 }
 
@@ -104,11 +106,13 @@ input UpdateUserPasswordInput {
 type User {
   avatar: String!
   createdAt: DateTime!
+  deleted: Boolean!
+  deletedBy: User
   disable: Boolean!
   email: String!
   id: ID!
-  index: Int!
   name: String!
   role: String!
+  sequenceNumber: Int!
   updatedAt: DateTime!
 }

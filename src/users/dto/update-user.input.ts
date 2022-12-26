@@ -7,4 +7,7 @@ export class UpdateUserInput {
 
   @Field(() => String, { nullable: true })
   avatar?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  disable?: boolean;
 }
