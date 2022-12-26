@@ -17,4 +17,7 @@ export class AdminUpdateUserInput {
 
   @Field(() => String, { nullable: true })
   avatar?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  disable?: boolean;
 }

@@ -4,6 +4,7 @@
 
 input AdminUpdateUserInput {
   avatar: String
+  disable: Boolean
   name: String
   role: String
 }

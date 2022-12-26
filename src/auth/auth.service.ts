@@ -140,7 +140,7 @@ export class AuthService {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new ForbiddenException('Access Denied');
+            throw new ForbiddenException('Access Denied testing - 1');
           }
         }
         console.error(error);
@@ -290,10 +290,11 @@ export class AuthService {
       this.cache.set(`user_${id}`, user, ONE_HOUR);
     }
 
-    if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
+    if (!user || !user.hashedRt)
+      throw new ForbiddenException('Access Denied testing - 2');
 
     const rtMatches = await argon.verify(user.hashedRt, rt);
-    if (!rtMatches) throw new ForbiddenException('Access Denied');
+    if (!rtMatches) throw new ForbiddenException('Access Denied testing - 3');
 
     const { access_token, refresh_token } = await this.getTokensResponse(
       user.id,
@@ -484,17 +485,14 @@ export class AuthService {
       hashedAt = user.hashedAt;
     }
     console.log('hashedAt', hashedAt);
-    try {
-      if (hashedAt) {
-        const atMatches = await argon.verify(hashedAt, at);
-        if (!atMatches) {
-          throw new ForbiddenException('Access Denied');
-        }
-      } else {
-        throw new ForbiddenException('Access Denied');
+
+    if (hashedAt) {
+      const atMatches = await argon.verify(hashedAt, at);
+      if (!atMatches) {
+        throw new ForbiddenException('Access Denied testing - 4');
       }
-    } catch (error) {
-      throw new ForbiddenException('Access Denied');
+    } else {
+      throw new ForbiddenException('Access Denied testing - 5');
     }
   }
 
