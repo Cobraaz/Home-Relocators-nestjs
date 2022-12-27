@@ -9,6 +9,22 @@ input AdminUpdateUserInput {
   role: String
 }
 
+type Category {
+  commercial: Boolean!
+  createdAt: DateTime!
+  deleted: Boolean!
+  deletedBy: User
+  disable: Boolean!
+  home: Boolean!
+  id: ID!
+  image: String!
+  name: String!
+  parentCategoryId: Category
+  sequenceNumber: Int!
+  updatedAt: DateTime!
+  userId: User!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """

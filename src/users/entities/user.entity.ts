@@ -38,7 +38,7 @@ export class User {
   deleted: boolean;
 
   @Field(() => User, { nullable: true })
-  deletedBy: string;
+  deletedBy?: string;
 
   @Field(() => Date)
   createdAt: Date;

@@ -15,6 +15,7 @@ import { AtGuard } from './common/guards/at.guard';
 import { RolesGuard } from './common/guards/role.guard';
 import { CacheModule } from './config/cache/cache.module';
 import { MailModule } from './services/mail/mail.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { MailModule } from './services/mail/mail.module';
     AuthModule,
     CacheModule,
     MailModule,
+    CategoryModule,
   ],
   providers: [
     {
