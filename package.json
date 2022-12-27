@@ -15,7 +15,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "gen-env": "npx gen-env-types .env -o src/common/@types/env.d.ts -e .",
-    "prisma-seed": "pnx prisma db seed"
+    "prisma-seed": "npx prisma db seed"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.8.1",

@@ -19,10 +19,18 @@ type Category {
   id: ID!
   image: String!
   name: String!
-  parentCategoryId: Category
+  parentCategory: Category
   sequenceNumber: Int!
   updatedAt: DateTime!
-  userId: User!
+  user: User!
+}
+
+input CreateCategoryInput {
+  commercial: Boolean
+  home: Boolean
+  image: String
+  name: String!
+  parentCategoryId: String
 }
 
 """
@@ -51,6 +59,10 @@ type FindAllUsersResponse {
   users: [User!]
 }
 
+input FindOneCategoryInput {
+  id: String!
+}
+
 input FindOneUserInput {
   id: String!
 }
@@ -68,6 +80,7 @@ type Mutation {
   activateAccount(emailActivationInput: EmailActivationInput!): TokensResponse!
   adminRemoveUser(findOneUserInput: FindOneUserInput!): User!
   adminUpdateUser(adminUpdateUserInput: AdminUpdateUserInput!, findOneUserInput: FindOneUserInput!): User!
+  createCategory(createCategoryInput: CreateCategoryInput!): Category!
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
@@ -75,12 +88,14 @@ type Mutation {
   resetPassword(resetPasswordInput: ResetPasswordInput!): TokensResponse!
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
   signupLocal(signUpUserInput: SignUpUserInput!): EmailActivationResponse!
+  updateCategory(findOneCategoryInput: FindOneCategoryInput!, updateCategoryInput: UpdateCategoryInput!): Category!
   updateUser(updateUserInput: UpdateUserInput!): User!
   updateUserPassword(updateUserPasswordInput: UpdateUserPasswordInput!): User!
 }
 
 type Query {
   adminFindOneUser(findOneUserInput: FindOneUserInput!): User!
+  category(findOneCategoryInput: FindOneCategoryInput!): Category!
   hello: String!
   user: User
   users(findAllUsersInput: FindAllUsersInput!): FindAllUsersResponse!
@@ -105,6 +120,15 @@ type TokensResponse {
   msg: String
   refresh_token: String!
   user: User!
+}
+
+input UpdateCategoryInput {
+  commercial: Boolean
+  disable: Boolean
+  home: Boolean
+  image: String
+  name: String
+  parentCategoryId: String
 }
 
 input UpdateUserInput {

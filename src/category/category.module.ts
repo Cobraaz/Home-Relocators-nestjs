@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CategoryResolver } from './category.resolver';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
-  providers: [CategoryResolver, CategoryService]
+  imports: [UsersModule],
+  providers: [CategoryResolver, CategoryService],
 })
 export class CategoryModule {}

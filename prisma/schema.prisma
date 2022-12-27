@@ -40,21 +40,23 @@ model User {
 }
 
 model Category {
-  id               String    @id @unique @default(uuid()) @db.Uuid
-  sequenceNumber   Int       @default(autoincrement())
-  name             String
-  image            String    @default("")
-  home             Boolean   @default(false)
-  commercial       Boolean   @default(false)
-  userId           String    @db.Uuid
-  parentCategoryId String?   @db.Uuid
-  disable          Boolean   @default(false)
-  deleted          Boolean   @default(false)
-  deletedBy        String?   @db.Uuid
-  deletedAt        DateTime? @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
-  user             User      @relation(fields: [userId], references: [id])
+  id               String     @id @unique @default(uuid()) @db.Uuid
+  sequenceNumber   Int        @default(autoincrement())
+  name             String     @unique
+  image            String     @default("")
+  home             Boolean    @default(false)
+  commercial       Boolean    @default(false)
+  userId           String     @db.Uuid
+  parentCategoryId String?    @db.Uuid
+  disable          Boolean    @default(false)
+  deleted          Boolean    @default(false)
+  deletedBy        String?    @db.Uuid
+  deletedAt        DateTime?  @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(3)
+  user             User       @relation(fields: [userId], references: [id])
+  parentCategory   Category?  @relation("ParentCategory", fields: [parentCategoryId], references: [id])
+  category         Category[] @relation("ParentCategory")
 
   @@map("category")
 }

@@ -119,19 +119,7 @@ export class UsersService {
             hashedAt: null,
             hashedRt: null,
           },
-          select: {
-            id: true,
-            sequenceNumber: true,
-            name: true,
-            email: true,
-            role: true,
-            avatar: true,
-            disable: true,
-            deleted: true,
-            deletedBy: true,
-            createdAt: true,
-            updatedAt: true,
-          },
+          select: selectUser,
         });
         return deletedUser;
       }

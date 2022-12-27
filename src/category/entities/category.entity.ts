@@ -23,10 +23,10 @@ export class Category {
   commercial: boolean;
 
   @Field(() => User)
-  userId: PrismaUser;
+  user?: PrismaUser;
 
   @Field(() => Category, { nullable: true })
-  parentCategoryId?: PrismaCategory;
+  parentCategory?: PrismaCategory;
 
   @Field(() => Boolean)
   disable: boolean;
@@ -42,4 +42,7 @@ export class Category {
 
   @Field(() => Date)
   updatedAt: Date;
+
+  userId: string;
+  parentCategoryId: string;
 }

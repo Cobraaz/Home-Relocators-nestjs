@@ -44,7 +44,7 @@ export class AuthService {
     const { name, email } = signUpUserInput;
     let { password } = signUpUserInput;
     const findEmail = await this.prisma.user.findFirst({
-      where: { email, deleted: false },
+      where: { email: email.toLowerCase() },
       select: {
         email: true,
       },
@@ -74,7 +74,7 @@ export class AuthService {
     await this.prisma.emailActivation.create({
       data: {
         name,
-        email,
+        email: email.toLowerCase(),
         password,
         activationOtp,
         expirationAt,
@@ -95,7 +95,7 @@ export class AuthService {
     const findEmailActivation = await this.prisma.emailActivation
       .findUniqueOrThrow({
         where: {
-          email: emailActivationInput.email,
+          email: emailActivationInput.email.toLowerCase(),
         },
       })
       .catch((error) => {
@@ -151,7 +151,7 @@ export class AuthService {
       .create({
         data: {
           name,
-          email,
+          email: email.toLowerCase(),
           password,
         },
         select: selectUser,
@@ -190,7 +190,7 @@ export class AuthService {
   async signinLocal(loginUserInput: LoginUserInput) {
     const user = await this.prisma.user.findFirst({
       where: {
-        email: loginUserInput.email,
+        email: loginUserInput.email.toLowerCase(),
         deleted: false,
       },
       select: {
@@ -319,7 +319,7 @@ export class AuthService {
   async forgetPassword(email: string) {
     const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: email.toLowerCase(),
         deleted: false,
       },
       select: {
@@ -349,7 +349,7 @@ export class AuthService {
     const expirationAt = otpExpirationTime(10);
     await this.prisma.forgetPassword.create({
       data: {
-        userEmail: user.email,
+        userEmail: user.email.toLowerCase(),
         resetingOtp,
         expirationAt,
       },
@@ -365,7 +365,7 @@ export class AuthService {
     const findEmailReseting = await this.prisma.forgetPassword
       .findUniqueOrThrow({
         where: {
-          userEmail: resetPasswordInput.email,
+          userEmail: resetPasswordInput.email.toLowerCase(),
         },
         select: {
           resetingOtp: true,

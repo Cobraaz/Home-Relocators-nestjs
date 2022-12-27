@@ -28,7 +28,6 @@ export class UsersResolver {
 
   @ResolveField(() => User)
   async deletedBy(@Parent() user: User) {
-    console.log('<<<<<<<<<<<-first->>>>>');
     const { deletedBy } = user;
     if (deletedBy) {
       return this.usersService.findOne(deletedBy, true);
