@@ -1,3 +1,4 @@
+import { FindAllCategoryResponse } from './entities/findAll-category-response.entity';
 import {
   Args,
   Mutation,
@@ -15,6 +16,7 @@ import { CreateCategoryInput } from './dto/create-category.input';
 import { FindOneCategoryInput } from './dto/findOne-category.input';
 import { UpdateCategoryInput } from './dto/update-category.input';
 import { Category } from './entities/category.entity';
+import { CacheControl } from 'nestjs-gql-cache-control';
 
 @Roles([Role.ADMIN])
 @Resolver(() => Category)
@@ -42,6 +44,15 @@ export class CategoryResolver {
     return null;
   }
 
+  @ResolveField(() => Category)
+  async deletedBy(@Parent() category: Category) {
+    const { deletedBy } = category;
+    if (deletedBy) {
+      return this.usersService.findOne(deletedBy, true);
+    }
+    return null;
+  }
+
   @Mutation(() => Category)
   createCategory(
     @Args('createCategoryInput') createCategoryInput: CreateCategoryInput,
@@ -50,12 +61,27 @@ export class CategoryResolver {
     return this.categoryService.create(createCategoryInput, id);
   }
 
+  @Query(() => FindAllCategoryResponse, { name: 'categories' })
+  @CacheControl({ maxAge: 10 })
+  findAll() {
+    return this.categoryService.findAll();
+  }
+
+  @Roles([Role.CUSTOMER, Role.MOVER])
   @Query(() => Category, { name: 'category' })
   findOne(
     @Args('findOneCategoryInput') findOneCategoryInput: FindOneCategoryInput,
     @GetCurrentUserId() id: string,
   ) {
     return this.categoryService.findOne(findOneCategoryInput.id, id);
+  }
+
+  @Query(() => Category)
+  adminFindOneCategory(
+    @Args('findOneCategoryInput') findOneCategoryInput: FindOneCategoryInput,
+    @GetCurrentUserId() id: string,
+  ) {
+    return this.categoryService.findOne(findOneCategoryInput.id, id, true);
   }
 
   @Mutation(() => Category)
@@ -69,5 +95,13 @@ export class CategoryResolver {
       findOneCategoryInput.id,
       id,
     );
+  }
+
+  @Mutation(() => Category)
+  removeCategory(
+    @Args('findOneCategoryInput') findOneCategoryInput: FindOneCategoryInput,
+    @GetCurrentUserId() id: string,
+  ) {
+    return this.categoryService.remove(findOneCategoryInput.id, id);
   }
 }

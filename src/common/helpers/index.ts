@@ -26,4 +26,5 @@ export const selectCategory = {
   deletedBy: true,
   createdAt: true,
   updatedAt: true,
+  childCategory: true,
 };

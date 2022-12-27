@@ -10,6 +10,7 @@ input AdminUpdateUserInput {
 }
 
 type Category {
+  childCategory: [Category!]
   commercial: Boolean!
   createdAt: DateTime!
   deleted: Boolean!
@@ -45,6 +46,11 @@ input EmailActivationInput {
 
 type EmailActivationResponse {
   msg: String!
+}
+
+type FindAllCategoryResponse {
+  categories: [Category!]
+  totalCount: Int!
 }
 
 input FindAllUsersInput {
@@ -84,6 +90,7 @@ type Mutation {
   forgetPassword(email: String!): ForgetPasswordResponse!
   logout: Boolean!
   refreshTokens: TokensResponse!
+  removeCategory(findOneCategoryInput: FindOneCategoryInput!): Category!
   removeUser: User!
   resetPassword(resetPasswordInput: ResetPasswordInput!): TokensResponse!
   signinLocal(loginUserInput: LoginUserInput!): TokensResponse!
@@ -94,7 +101,9 @@ type Mutation {
 }
 
 type Query {
+  adminFindOneCategory(findOneCategoryInput: FindOneCategoryInput!): Category!
   adminFindOneUser(findOneUserInput: FindOneUserInput!): User!
+  categories: FindAllCategoryResponse!
   category(findOneCategoryInput: FindOneCategoryInput!): Category!
   hello: String!
   user: User

@@ -28,6 +28,9 @@ export class Category {
   @Field(() => Category, { nullable: true })
   parentCategory?: PrismaCategory;
 
+  @Field(() => [Category], { nullable: true })
+  childCategory?: PrismaCategory[];
+
   @Field(() => Boolean)
   disable: boolean;
 

@@ -1,3 +1,4 @@
+import { FindAllCategoryResponse } from './entities/findAll-category-response.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { selectCategory } from 'src/common/helpers';
@@ -41,8 +42,19 @@ export class CategoryService {
     return category;
   }
 
-  findAll() {
-    return `This action returns all category`;
+  async findAll(): Promise<FindAllCategoryResponse> {
+    const categories = await this.prisma.category.findMany({
+      where: {
+        parentCategoryId: null,
+      },
+      select: selectCategory,
+    });
+
+    const totalCount = await this.prisma.user.count();
+    return {
+      totalCount,
+      categories,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
@@ -56,7 +68,13 @@ export class CategoryService {
         },
         select: {
           ...selectCategory,
-          category: true,
+          ...(!adminFindUser && {
+            childCategory: {
+              where: {
+                disable: false,
+              },
+            },
+          }),
         },
       })
       .catch(() => {
@@ -95,7 +113,21 @@ export class CategoryService {
     return updatedCategory;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} category`;
+  async remove(categoryId: string, userId: string) {
+    await this.findOne(categoryId, userId);
+
+    const deletedCategory = await this.prisma.category.update({
+      where: {
+        id: categoryId,
+      },
+      data: {
+        deleted: true,
+        deletedAt: new Date(),
+        deletedBy: userId,
+      },
+      select: selectCategory,
+    });
+
+    return deletedCategory;
   }
 }

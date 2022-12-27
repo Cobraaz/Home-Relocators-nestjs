@@ -55,8 +55,8 @@ model Category {
   createdAt        DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime   @updatedAt @db.Timestamptz(3)
   user             User       @relation(fields: [userId], references: [id])
-  parentCategory   Category?  @relation("ParentCategory", fields: [parentCategoryId], references: [id])
-  category         Category[] @relation("ParentCategory")
+  parentCategory   Category?  @relation("SubCategory", fields: [parentCategoryId], references: [id])
+  childCategory    Category[] @relation("SubCategory")
 
   @@map("category")
 }
