@@ -42,11 +42,12 @@ export class CategoryService {
     return category;
   }
 
-  async findAll(): Promise<FindAllCategoryResponse> {
+  async findAll(isSubCategories: boolean): Promise<FindAllCategoryResponse> {
+    const whereCondition = {
+      parentCategoryId: null,
+    };
     const categories = await this.prisma.category.findMany({
-      where: {
-        parentCategoryId: null,
-      },
+      ...(!isSubCategories && { where: whereCondition }),
       select: selectCategory,
     });
 

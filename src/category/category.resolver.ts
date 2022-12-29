@@ -1,4 +1,3 @@
-import { FindAllCategoryResponse } from './entities/findAll-category-response.entity';
 import {
   Args,
   Mutation,
@@ -15,6 +14,7 @@ import { CategoryService } from './category.service';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { FindOneCategoryInput } from './dto/findOne-category.input';
 import { UpdateCategoryInput } from './dto/update-category.input';
+import { FindAllCategoryResponse } from './entities/findAll-category-response.entity';
 import { Category } from './entities/category.entity';
 import { CacheControl } from 'nestjs-gql-cache-control';
 
@@ -63,8 +63,8 @@ export class CategoryResolver {
 
   @Query(() => FindAllCategoryResponse, { name: 'categories' })
   @CacheControl({ maxAge: 10 })
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(@Args('isSubCategories') isSubCategories: boolean) {
+    return this.categoryService.findAll(isSubCategories);
   }
 
   @Roles([Role.CUSTOMER, Role.MOVER])

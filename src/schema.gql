@@ -103,7 +103,7 @@ type Mutation {
 type Query {
   adminFindOneCategory(findOneCategoryInput: FindOneCategoryInput!): Category!
   adminFindOneUser(findOneUserInput: FindOneUserInput!): User!
-  categories: FindAllCategoryResponse!
+  categories(isSubCategories: Boolean!): FindAllCategoryResponse!
   category(findOneCategoryInput: FindOneCategoryInput!): Category!
   hello: String!
   user: User
